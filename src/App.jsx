@@ -1,8 +1,9 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Pages
 import Home from './pages/Home';
@@ -10,9 +11,14 @@ import ForNGOs from './pages/ForNGOs';
 import ForVolunteers from './pages/ForVolunteers';
 import ForDonors from './pages/ForDonors';
 import About from './pages/About';
+import Contact from './pages/Contact';
+import Blog from './pages/Blog';
+import BlogDetail from './pages/BlogDetail';
+import NotFound from './pages/NotFound';
 
 // Auth Pages
 import SignIn from './pages/auth/SignIn';
+import SignUp from './pages/auth/SignUp';
 import VolunteerStep1 from './pages/auth/VolunteerStep1';
 import VolunteerStep2 from './pages/auth/VolunteerStep2';
 import DonorStep1 from './pages/auth/DonorStep1';
@@ -61,6 +67,9 @@ function App() {
             <Route path="/for-volunteers" element={<ForVolunteers />} />
             <Route path="/for-donors" element={<ForDonors />} />
             <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogDetail />} />
           </Route>
 
           {/* Auth Routes */}
@@ -73,13 +82,38 @@ function App() {
             <Route path="/signup/ngo/step2" element={<NGOStep2 />} />
           </Route>
 
-          {/* Sign In — standalone full-page layout */}
+          {/* Sign In & Sign Up — standalone full-page layout */}
           <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
 
-          {/* Dashboard Routes (No standard navbar/footer) */}
-          <Route path="/dashboard/volunteer" element={<VolunteerDashboard />} />
-          <Route path="/dashboard/donor" element={<DonorDashboard />} />
-          <Route path="/dashboard/ngo" element={<NGODashboard />} />
+          {/* Protected Dashboard Routes */}
+          <Route 
+            path="/dashboard/volunteer" 
+            element={
+              <ProtectedRoute requiredRole="volunteer">
+                <VolunteerDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/dashboard/donor" 
+            element={
+              <ProtectedRoute requiredRole="donor">
+                <DonorDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/dashboard/ngo" 
+            element={
+              <ProtectedRoute requiredRole="ngo">
+                <NGODashboard />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* 404 Not Found */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

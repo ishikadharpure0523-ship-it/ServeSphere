@@ -12,10 +12,13 @@ export default function Navbar() {
   const location = useLocation();
 
   const navLinks = [
+    { label: 'Home',           href: '/' },
     { label: 'For NGOs',       href: '/for-ngos' },
     { label: 'For Volunteers', href: '/for-volunteers' },
     { label: 'For Donors',     href: '/for-donors' },
     { label: 'About',          href: '/about' },
+    { label: 'Blog',           href: '/blog' },
+    { label: 'Contact',        href: '/contact' },
   ];
 
   const isActive = (href) => location.pathname === href;
@@ -100,7 +103,7 @@ export default function Navbar() {
                     </div>
                     <div className="flex flex-col py-1">
                       <button 
-                        onClick={() => { setDropdownOpen(false); navigate('/dashboard/volunteer'); }}
+                        onClick={() => { setDropdownOpen(false); navigate('/signup'); }}
                         className="flex items-center justify-between px-4 py-3 hover:bg-teal-light/50 transition-colors group text-left"
                       >
                         <div className="flex items-center gap-3">
@@ -110,7 +113,7 @@ export default function Navbar() {
                         <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-amber transition-colors" />
                       </button>
                       <button 
-                        onClick={() => { setDropdownOpen(false); navigate('/dashboard/donor'); }}
+                        onClick={() => { setDropdownOpen(false); navigate('/signup'); }}
                         className="flex items-center justify-between px-4 py-3 hover:bg-teal-light/50 transition-colors group text-left"
                       >
                         <div className="flex items-center gap-3">
@@ -120,7 +123,7 @@ export default function Navbar() {
                         <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-coral transition-colors" />
                       </button>
                       <button 
-                        onClick={() => { setDropdownOpen(false); navigate('/dashboard/ngo'); }}
+                        onClick={() => { setDropdownOpen(false); navigate('/signup'); }}
                         className="flex items-center justify-between px-4 py-3 hover:bg-teal-light/50 transition-colors group text-left"
                       >
                         <div className="flex items-center gap-3">
@@ -192,20 +195,20 @@ export default function Navbar() {
                 Sign In
               </Link>
               <button
-                onClick={() => { setMobileMenuOpen(false); navigate('/dashboard/volunteer'); }}
+                onClick={() => { setMobileMenuOpen(false); navigate('/signup'); }}
                 className="w-full py-4 rounded-2xl bg-amber text-ink font-semibold text-lg"
               >
                 Join as Volunteer
               </button>
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => { setMobileMenuOpen(false); navigate('/dashboard/donor'); }}
+                  onClick={() => { setMobileMenuOpen(false); navigate('/signup'); }}
                   className="py-4 rounded-2xl bg-coral text-white font-semibold"
                 >
                   Donor
                 </button>
                 <button
-                  onClick={() => { setMobileMenuOpen(false); navigate('/dashboard/ngo'); }}
+                  onClick={() => { setMobileMenuOpen(false); navigate('/signup'); }}
                   className="py-4 rounded-2xl bg-teal text-white font-semibold"
                 >
                   NGO

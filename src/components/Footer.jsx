@@ -43,9 +43,10 @@ export default function Footer() {
             <h4 className="font-serif text-lg mb-5 text-white">Platform</h4>
             <ul className="space-y-3 text-sm">
               <li><Link to="/about"        className="text-gray-400 hover:text-teal transition-colors">About Us</Link></li>
+              <li><Link to="/contact"      className="text-gray-400 hover:text-teal transition-colors">Contact Us</Link></li>
+              <li><Link to="/blog"         className="text-gray-400 hover:text-teal transition-colors">Blog</Link></li>
               <li><Link to="/"             className="text-gray-400 hover:text-teal transition-colors">How It Works</Link></li>
               <li><Link to="/"             className="text-gray-400 hover:text-teal transition-colors">Trust &amp; Safety</Link></li>
-              <li><Link to="/"             className="text-gray-400 hover:text-teal transition-colors">Contact Support</Link></li>
             </ul>
           </div>
 
@@ -60,13 +61,14 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* For Volunteers + Resources */}
+          {/* For Volunteers + Auth */}
           <div>
-            <h4 className="font-serif text-lg mb-5 text-white">For Volunteers</h4>
+            <h4 className="font-serif text-lg mb-5 text-white">Get Started</h4>
             <ul className="space-y-3 text-sm mb-8">
-              <li><Link to="/for-volunteers"          className="text-gray-400 hover:text-amber transition-colors">Overview</Link></li>
-              <li><Link to="/dashboard/volunteer"  className="text-gray-400 hover:text-amber transition-colors">Join as Volunteer</Link></li>
+              <li><Link to="/for-volunteers"          className="text-gray-400 hover:text-amber transition-colors">For Volunteers</Link></li>
               <li><Link to="/for-donors"              className="text-gray-400 hover:text-coral transition-colors">For Donors</Link></li>
+              <li><Link to="/signin"                  className="text-gray-400 hover:text-teal transition-colors">Sign In</Link></li>
+              <li><Link to="/signup"                  className="text-gray-400 hover:text-teal transition-colors">Sign Up</Link></li>
             </ul>
             <h4 className="font-serif text-lg mb-5 text-white">Resources</h4>
             <ul className="space-y-3 text-sm">

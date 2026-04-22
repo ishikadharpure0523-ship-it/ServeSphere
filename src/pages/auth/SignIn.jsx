@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Globe, Mail, Lock, Eye, EyeOff, ChevronDown, Users, Heart, Building, ArrowRight } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const ROLES = [
   { id: 'volunteer', label: 'Volunteer',  Icon: Users,    color: 'text-amber-dark', bg: 'bg-amber-light',  border: 'border-amber',   dashboard: '/dashboard/volunteer' },
@@ -11,17 +12,54 @@ const ROLES = [
 
 export default function SignIn() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [role, setRole]           = useState(null);
   const [dropOpen, setDropOpen]   = useState(false);
   const [showPass, setShowPass]   = useState(false);
   const [email, setEmail]         = useState('');
   const [password, setPassword]   = useState('');
+  const [errors, setErrors]       = useState({});
 
   const selected = ROLES.find(r => r.id === role);
 
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+    
+    if (!password.trim()) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    if (!selected) {
+      newErrors.role = 'Please select your role';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!selected) { setDropOpen(true); return; }
+    
+    if (!validateForm()) {
+      if (!selected) setDropOpen(true);
+      return;
+    }
+    
+    // Mock authentication - in real app, this would call an API
+    const userData = {
+      email,
+      name: email.split('@')[0],
+    };
+    
+    login(userData, selected.id);
     navigate(selected.dashboard);
   };
 
@@ -153,12 +191,17 @@ export default function SignIn() {
                   <input
                     type="email"
                     value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    onChange={e => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: '' })); }}
                     required
                     placeholder="you@example.com"
-                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal focus:border-teal outline-none text-sm transition-all"
+                    className={`w-full pl-11 pr-4 py-3 rounded-xl border ${
+                      errors.email ? 'border-red-500' : 'border-gray-200'
+                    } focus:ring-2 focus:ring-teal focus:border-teal outline-none text-sm transition-all`}
                   />
                 </div>
+                {errors.email && (
+                  <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                )}
               </div>
 
               {/* Password */}
@@ -172,15 +215,20 @@ export default function SignIn() {
                   <input
                     type={showPass ? 'text' : 'password'}
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
+                    onChange={e => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: '' })); }}
                     required
                     placeholder="••••••••"
-                    className="w-full pl-11 pr-11 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal focus:border-teal outline-none text-sm transition-all"
+                    className={`w-full pl-11 pr-11 py-3 rounded-xl border ${
+                      errors.password ? 'border-red-500' : 'border-gray-200'
+                    } focus:ring-2 focus:ring-teal focus:border-teal outline-none text-sm transition-all`}
                   />
                   <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-ink">
                     {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {errors.password && (
+                  <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                )}
               </div>
 
               {/* Role warning */}
@@ -218,10 +266,10 @@ export default function SignIn() {
             <div className="bg-warm rounded-2xl p-5 border border-gray-100">
               <p className="text-sm font-semibold text-ink mb-4">New to ServeSphere? Join as:</p>
               <div className="space-y-2">
-                {ROLES.map(({ id, label, Icon, color, bg, dashboard }) => (
+                {ROLES.map(({ id, label, Icon, color, bg }) => (
                   <button
                     key={id}
-                    onClick={() => navigate(dashboard)}
+                    onClick={() => navigate('/signup')}
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-gray-100 hover:border-teal/40 hover:shadow-sm transition-all text-left group"
                   >
                     <div className={`w-9 h-9 rounded-full ${bg} flex items-center justify-center shrink-0`}>

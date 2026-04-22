@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Search, DollarSign, Package, BarChart2, Settings, LogOut,
   Globe, MapPin, ChevronDown, ChevronUp, X, CheckCircle,
-  TrendingUp, Heart, Users, Shield, AlertCircle, FileText,
+  TrendingUp, Heart, Users, Shield, AlertCircle, FileText, User, Bell,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 /* ── Animation variants ─────────────────────────────────────── */
 const fadeUp = {
@@ -860,6 +861,12 @@ function TabImpact() {
 ══════════════════════════════════════════════════════════════ */
 function Sidebar({ active, setActive, collapsed, setCollapsed }) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <aside
@@ -928,7 +935,7 @@ function Sidebar({ active, setActive, collapsed, setCollapsed }) {
           {!collapsed && <span>Collapse</span>}
         </button>
         <button
-          onClick={() => navigate('/')}
+          onClick={handleLogout}
           className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-muted hover:text-red-500 transition-colors group"
           title={collapsed ? 'Sign Out' : undefined}
         >
@@ -941,6 +948,337 @@ function Sidebar({ active, setActive, collapsed, setCollapsed }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   TAB 6 — SETTINGS
+══════════════════════════════════════════════════════════════ */
+function TabSettings() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState('profile');
+  const [formData, setFormData] = useState({
+    name: user?.name || 'Sunita Mehta',
+    email: user?.email || 'sunita@example.com',
+    phone: '+91 98765 12345',
+    city: 'Bangalore, Karnataka',
+  });
+  const [notifications, setNotifications] = useState({
+    emailNewRequests: true,
+    emailUtilizationReports: true,
+    emailNGOUpdates: true,
+    emailMonthlyImpact: false,
+    pushDonationReceipts: true,
+  });
+  const [privacy, setPrivacy] = useState({
+    showDonations: 'anonymous',
+    showProfile: true,
+  });
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleDeleteAccount = () => {
+    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+      logout();
+      navigate('/');
+    }
+  };
+
+  return (
+    <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-6">
+      <motion.div variants={fadeUp}>
+        <h1 className="font-serif text-3xl text-ink mb-1">Settings</h1>
+        <p className="text-muted text-sm">Manage your account preferences and settings.</p>
+      </motion.div>
+
+      <div className="grid lg:grid-cols-4 gap-6">
+        {/* Settings Navigation */}
+        <motion.div variants={fadeUp} className="lg:col-span-1">
+          <div className="bg-white rounded-xl border border-gray-100 p-2 sticky top-6">
+            {[
+              { id: 'profile', label: 'Profile', icon: User },
+              { id: 'notifications', label: 'Notifications', icon: Bell },
+              { id: 'privacy', label: 'Privacy', icon: Shield },
+              { id: 'account', label: 'Account', icon: Settings },
+            ].map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveSection(id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  activeSection === id
+                    ? 'bg-coral-light text-coral'
+                    : 'text-muted hover:bg-sand hover:text-ink'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Settings Content */}
+        <motion.div variants={fadeUp} className="lg:col-span-3">
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <AnimatePresence mode="wait">
+              {activeSection === 'profile' && (
+                <motion.div
+                  key="profile"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-6"
+                >
+                  <div>
+                    <h2 className="font-serif text-2xl text-ink mb-1">Profile Information</h2>
+                    <p className="text-muted text-sm">Update your personal details.</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-ink mb-2">Full Name</label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-coral focus:border-coral outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-ink mb-2">Email</label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-coral focus:border-coral outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-ink mb-2">Phone</label>
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-coral focus:border-coral outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-ink mb-2">City</label>
+                      <input
+                        type="text"
+                        value={formData.city}
+                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-coral focus:border-coral outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleSave}
+                    className="px-6 py-3 rounded-xl bg-coral text-white font-semibold hover:opacity-90 transition-opacity"
+                  >
+                    {saved ? '✓ Saved!' : 'Save Changes'}
+                  </button>
+                </motion.div>
+              )}
+
+              {activeSection === 'notifications' && (
+                <motion.div
+                  key="notifications"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-6"
+                >
+                  <div>
+                    <h2 className="font-serif text-2xl text-ink mb-1">Notification Preferences</h2>
+                    <p className="text-muted text-sm">Choose how you want to be notified.</p>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="font-semibold text-ink mb-4">Email Notifications</h3>
+                      <div className="space-y-3">
+                        {[
+                          { key: 'emailNewRequests', label: 'New fund requests', desc: 'Get notified when NGOs post new funding needs' },
+                          { key: 'emailUtilizationReports', label: 'Fund utilization reports', desc: 'Receive updates on how your donations are being used' },
+                          { key: 'emailNGOUpdates', label: 'NGO updates', desc: 'Get updates from NGOs you have donated to' },
+                          { key: 'emailMonthlyImpact', label: 'Monthly impact summary', desc: 'Receive a monthly report of your total impact' },
+                        ].map(({ key, label, desc }) => (
+                          <label key={key} className="flex items-start gap-3 p-4 rounded-xl border border-gray-100 hover:bg-sand transition-colors cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notifications[key]}
+                              onChange={(e) => setNotifications({ ...notifications, [key]: e.target.checked })}
+                              className="mt-1 w-4 h-4 text-coral border-gray-300 rounded focus:ring-coral"
+                            />
+                            <div>
+                              <p className="font-medium text-ink text-sm">{label}</p>
+                              <p className="text-muted text-xs mt-0.5">{desc}</p>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold text-ink mb-4">Push Notifications</h3>
+                      <div className="space-y-3">
+                        <label className="flex items-start gap-3 p-4 rounded-xl border border-gray-100 hover:bg-sand transition-colors cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={notifications.pushDonationReceipts}
+                            onChange={(e) => setNotifications({ ...notifications, pushDonationReceipts: e.target.checked })}
+                            className="mt-1 w-4 h-4 text-coral border-gray-300 rounded focus:ring-coral"
+                          />
+                          <div>
+                            <p className="font-medium text-ink text-sm">Donation receipts</p>
+                            <p className="text-muted text-xs mt-0.5">Instant confirmation when donations are processed</p>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleSave}
+                    className="px-6 py-3 rounded-xl bg-coral text-white font-semibold hover:opacity-90 transition-opacity"
+                  >
+                    {saved ? '✓ Saved!' : 'Save Preferences'}
+                  </button>
+                </motion.div>
+              )}
+
+              {activeSection === 'privacy' && (
+                <motion.div
+                  key="privacy"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-6"
+                >
+                  <div>
+                    <h2 className="font-serif text-2xl text-ink mb-1">Privacy Settings</h2>
+                    <p className="text-muted text-sm">Control your donation visibility.</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-ink mb-3">Donation Visibility</label>
+                      <div className="space-y-2">
+                        {[
+                          { value: 'public', label: 'Public', desc: 'Show my name and donation amounts' },
+                          { value: 'anonymous', label: 'Anonymous', desc: 'Hide my identity on all donations' },
+                          { value: 'partial', label: 'Partial', desc: 'Show name but hide amounts' },
+                        ].map(({ value, label, desc }) => (
+                          <label key={value} className="flex items-start gap-3 p-4 rounded-xl border-2 transition-colors cursor-pointer hover:bg-sand"
+                            style={{ borderColor: privacy.showDonations === value ? '#E76F51' : '#E5E7EB' }}>
+                            <input
+                              type="radio"
+                              name="visibility"
+                              value={value}
+                              checked={privacy.showDonations === value}
+                              onChange={(e) => setPrivacy({ ...privacy, showDonations: e.target.value })}
+                              className="mt-1 w-4 h-4 text-coral border-gray-300 focus:ring-coral"
+                            />
+                            <div>
+                              <p className="font-medium text-ink text-sm">{label}</p>
+                              <p className="text-muted text-xs mt-0.5">{desc}</p>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-gray-100">
+                      <label className="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:bg-sand transition-colors cursor-pointer">
+                        <div>
+                          <p className="font-medium text-ink text-sm">Show profile to NGOs</p>
+                          <p className="text-muted text-xs mt-0.5">Allow NGOs to view your donation history</p>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={privacy.showProfile}
+                          onChange={(e) => setPrivacy({ ...privacy, showProfile: e.target.checked })}
+                          className="w-4 h-4 text-coral border-gray-300 rounded focus:ring-coral"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleSave}
+                    className="px-6 py-3 rounded-xl bg-coral text-white font-semibold hover:opacity-90 transition-opacity"
+                  >
+                    {saved ? '✓ Saved!' : 'Save Settings'}
+                  </button>
+                </motion.div>
+              )}
+
+              {activeSection === 'account' && (
+                <motion.div
+                  key="account"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-6"
+                >
+                  <div>
+                    <h2 className="font-serif text-2xl text-ink mb-1">Account Settings</h2>
+                    <p className="text-muted text-sm">Manage your account security.</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-xl border border-gray-100">
+                      <h3 className="font-semibold text-ink mb-2">Change Password</h3>
+                      <p className="text-muted text-sm mb-4">Update your password to keep your account secure.</p>
+                      <button className="px-4 py-2 rounded-lg border border-coral text-coral text-sm font-semibold hover:bg-coral-light transition-colors">
+                        Change Password
+                      </button>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-gray-100">
+                      <h3 className="font-semibold text-ink mb-2">Payment Methods</h3>
+                      <p className="text-muted text-sm mb-4">Manage your saved payment methods for faster donations.</p>
+                      <button className="px-4 py-2 rounded-lg border border-gray-300 text-ink text-sm font-semibold hover:bg-sand transition-colors">
+                        Manage Payment Methods
+                      </button>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-gray-100">
+                      <h3 className="font-semibold text-ink mb-2">Download Tax Receipts</h3>
+                      <p className="text-muted text-sm mb-4">Get all your donation receipts for tax purposes.</p>
+                      <button className="px-4 py-2 rounded-lg border border-gray-300 text-ink text-sm font-semibold hover:bg-sand transition-colors">
+                        Download Receipts
+                      </button>
+                    </div>
+
+                    <div className="p-4 rounded-xl border-2 border-red-200 bg-red-50">
+                      <h3 className="font-semibold text-red-600 mb-2">Delete Account</h3>
+                      <p className="text-red-600 text-sm mb-4">Permanently delete your account and all donation history.</p>
+                      <button
+                        onClick={handleDeleteAccount}
+                        className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors"
+                      >
+                        Delete My Account
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
    MAIN EXPORT
 ══════════════════════════════════════════════════════════════ */
 const TAB_COMPONENTS = {
@@ -949,13 +1287,7 @@ const TAB_COMPONENTS = {
   donations: TabMyDonations,
   resources: TabResources,
   impact:    TabImpact,
-  settings: () => (
-    <div className="flex flex-col items-center justify-center h-64 text-muted">
-      <Settings className="w-12 h-12 mb-4 opacity-30" />
-      <p className="font-serif text-xl text-ink mb-2">Settings</p>
-      <p className="text-sm">Account settings coming soon.</p>
-    </div>
-  ),
+  settings:  TabSettings,
 };
 
 export default function DonorDashboard() {

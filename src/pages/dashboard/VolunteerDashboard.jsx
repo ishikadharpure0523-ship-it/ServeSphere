@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Search, ClipboardList, Award, Star, FolderOpen, Settings, LogOut,
   Globe, MapPin, CheckCircle, Clock, XCircle, ChevronDown, ChevronUp,
-  Download, Share2, Edit3, ExternalLink, Zap, Shield, Heart, Leaf,
+  Download, Share2, Edit3, ExternalLink, Zap, Shield, Heart, Leaf, User, Bell,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 /* ── Shared fade-up variant ─────────────────────────────────── */
 const fadeUp = {
@@ -710,6 +711,12 @@ function TabPortfolio() {
 ══════════════════════════════════════════════════════════════ */
 function Sidebar({ active, setActive, collapsed, setCollapsed }) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <aside
@@ -783,7 +790,7 @@ function Sidebar({ active, setActive, collapsed, setCollapsed }) {
           {!collapsed && <span>Collapse</span>}
         </button>
         <button
-          onClick={() => navigate('/')}
+          onClick={handleLogout}
           className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-muted hover:text-red-500 transition-colors group"
           title={collapsed ? 'Sign Out' : undefined}
         >
@@ -792,6 +799,370 @@ function Sidebar({ active, setActive, collapsed, setCollapsed }) {
         </button>
       </div>
     </aside>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TAB 7 — SETTINGS
+══════════════════════════════════════════════════════════════ */
+function TabSettings() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState('profile');
+  const [formData, setFormData] = useState({
+    name: user?.name || 'Arjun Kulkarni',
+    email: user?.email || 'arjun@example.com',
+    phone: '+91 98765 43210',
+    city: 'Pune, Maharashtra',
+    bio: 'Passionate about education and community health. I have been volunteering since 2021.',
+    skills: ['Teaching', 'First Aid', 'Logistics'],
+  });
+  const [notifications, setNotifications] = useState({
+    emailNewOpportunities: true,
+    emailApplicationStatus: true,
+    emailNGOUpdates: false,
+    pushNewOpportunities: true,
+    pushMessages: true,
+  });
+  const [privacy, setPrivacy] = useState({
+    profileVisibility: 'public',
+    showEmail: false,
+    showPhone: false,
+  });
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    // Mock save - in real app would call API
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleDeleteAccount = () => {
+    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+      logout();
+      navigate('/');
+    }
+  };
+
+  return (
+    <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-6">
+      <motion.div variants={fadeUp}>
+        <h1 className="font-serif text-3xl text-ink mb-1">Settings</h1>
+        <p className="text-muted text-sm">Manage your account preferences and settings.</p>
+      </motion.div>
+
+      <div className="grid lg:grid-cols-4 gap-6">
+        {/* Settings Navigation */}
+        <motion.div variants={fadeUp} className="lg:col-span-1">
+          <div className="bg-white rounded-xl border border-gray-100 p-2 sticky top-6">
+            {[
+              { id: 'profile', label: 'Profile', icon: User },
+              { id: 'notifications', label: 'Notifications', icon: Bell },
+              { id: 'privacy', label: 'Privacy', icon: Shield },
+              { id: 'account', label: 'Account', icon: Settings },
+            ].map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveSection(id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  activeSection === id
+                    ? 'bg-teal-light text-teal'
+                    : 'text-muted hover:bg-sand hover:text-ink'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Settings Content */}
+        <motion.div variants={fadeUp} className="lg:col-span-3">
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <AnimatePresence mode="wait">
+              {activeSection === 'profile' && (
+                <motion.div
+                  key="profile"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-6"
+                >
+                  <div>
+                    <h2 className="font-serif text-2xl text-ink mb-1">Profile Information</h2>
+                    <p className="text-muted text-sm">Update your personal details and profile.</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-ink mb-2">Full Name</label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal focus:border-teal outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-ink mb-2">Email</label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal focus:border-teal outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-ink mb-2">Phone</label>
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal focus:border-teal outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-ink mb-2">City</label>
+                      <input
+                        type="text"
+                        value={formData.city}
+                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal focus:border-teal outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-ink mb-2">Bio</label>
+                      <textarea
+                        rows={4}
+                        value={formData.bio}
+                        onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal focus:border-teal outline-none resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleSave}
+                    className="px-6 py-3 rounded-xl bg-teal text-white font-semibold hover:bg-teal-dark transition-colors"
+                  >
+                    {saved ? '✓ Saved!' : 'Save Changes'}
+                  </button>
+                </motion.div>
+              )}
+
+              {activeSection === 'notifications' && (
+                <motion.div
+                  key="notifications"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-6"
+                >
+                  <div>
+                    <h2 className="font-serif text-2xl text-ink mb-1">Notification Preferences</h2>
+                    <p className="text-muted text-sm">Choose how you want to be notified.</p>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="font-semibold text-ink mb-4">Email Notifications</h3>
+                      <div className="space-y-3">
+                        {[
+                          { key: 'emailNewOpportunities', label: 'New volunteer opportunities', desc: 'Get notified when NGOs post new opportunities matching your skills' },
+                          { key: 'emailApplicationStatus', label: 'Application status updates', desc: 'Receive updates when NGOs review your applications' },
+                          { key: 'emailNGOUpdates', label: 'NGO updates and reports', desc: 'Get updates from NGOs you have worked with' },
+                        ].map(({ key, label, desc }) => (
+                          <label key={key} className="flex items-start gap-3 p-4 rounded-xl border border-gray-100 hover:bg-sand transition-colors cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notifications[key]}
+                              onChange={(e) => setNotifications({ ...notifications, [key]: e.target.checked })}
+                              className="mt-1 w-4 h-4 text-teal border-gray-300 rounded focus:ring-teal"
+                            />
+                            <div>
+                              <p className="font-medium text-ink text-sm">{label}</p>
+                              <p className="text-muted text-xs mt-0.5">{desc}</p>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold text-ink mb-4">Push Notifications</h3>
+                      <div className="space-y-3">
+                        {[
+                          { key: 'pushNewOpportunities', label: 'New opportunities', desc: 'Instant alerts for new volunteer roles' },
+                          { key: 'pushMessages', label: 'Messages', desc: 'Get notified when NGOs message you' },
+                        ].map(({ key, label, desc }) => (
+                          <label key={key} className="flex items-start gap-3 p-4 rounded-xl border border-gray-100 hover:bg-sand transition-colors cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={notifications[key]}
+                              onChange={(e) => setNotifications({ ...notifications, [key]: e.target.checked })}
+                              className="mt-1 w-4 h-4 text-teal border-gray-300 rounded focus:ring-teal"
+                            />
+                            <div>
+                              <p className="font-medium text-ink text-sm">{label}</p>
+                              <p className="text-muted text-xs mt-0.5">{desc}</p>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleSave}
+                    className="px-6 py-3 rounded-xl bg-teal text-white font-semibold hover:bg-teal-dark transition-colors"
+                  >
+                    {saved ? '✓ Saved!' : 'Save Preferences'}
+                  </button>
+                </motion.div>
+              )}
+
+              {activeSection === 'privacy' && (
+                <motion.div
+                  key="privacy"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-6"
+                >
+                  <div>
+                    <h2 className="font-serif text-2xl text-ink mb-1">Privacy Settings</h2>
+                    <p className="text-muted text-sm">Control who can see your information.</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-ink mb-3">Profile Visibility</label>
+                      <div className="space-y-2">
+                        {[
+                          { value: 'public', label: 'Public', desc: 'Anyone can view your profile' },
+                          { value: 'ngos', label: 'NGOs Only', desc: 'Only verified NGOs can view your profile' },
+                          { value: 'private', label: 'Private', desc: 'Only you can view your profile' },
+                        ].map(({ value, label, desc }) => (
+                          <label key={value} className="flex items-start gap-3 p-4 rounded-xl border-2 transition-colors cursor-pointer hover:bg-sand"
+                            style={{ borderColor: privacy.profileVisibility === value ? '#1D9E75' : '#E5E7EB' }}>
+                            <input
+                              type="radio"
+                              name="visibility"
+                              value={value}
+                              checked={privacy.profileVisibility === value}
+                              onChange={(e) => setPrivacy({ ...privacy, profileVisibility: e.target.value })}
+                              className="mt-1 w-4 h-4 text-teal border-gray-300 focus:ring-teal"
+                            />
+                            <div>
+                              <p className="font-medium text-ink text-sm">{label}</p>
+                              <p className="text-muted text-xs mt-0.5">{desc}</p>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-gray-100">
+                      <h3 className="font-semibold text-ink mb-3">Contact Information</h3>
+                      <div className="space-y-3">
+                        <label className="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:bg-sand transition-colors cursor-pointer">
+                          <div>
+                            <p className="font-medium text-ink text-sm">Show email on profile</p>
+                            <p className="text-muted text-xs mt-0.5">NGOs can see your email address</p>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={privacy.showEmail}
+                            onChange={(e) => setPrivacy({ ...privacy, showEmail: e.target.checked })}
+                            className="w-4 h-4 text-teal border-gray-300 rounded focus:ring-teal"
+                          />
+                        </label>
+                        <label className="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:bg-sand transition-colors cursor-pointer">
+                          <div>
+                            <p className="font-medium text-ink text-sm">Show phone on profile</p>
+                            <p className="text-muted text-xs mt-0.5">NGOs can see your phone number</p>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={privacy.showPhone}
+                            onChange={(e) => setPrivacy({ ...privacy, showPhone: e.target.checked })}
+                            className="w-4 h-4 text-teal border-gray-300 rounded focus:ring-teal"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleSave}
+                    className="px-6 py-3 rounded-xl bg-teal text-white font-semibold hover:bg-teal-dark transition-colors"
+                  >
+                    {saved ? '✓ Saved!' : 'Save Settings'}
+                  </button>
+                </motion.div>
+              )}
+
+              {activeSection === 'account' && (
+                <motion.div
+                  key="account"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-6"
+                >
+                  <div>
+                    <h2 className="font-serif text-2xl text-ink mb-1">Account Settings</h2>
+                    <p className="text-muted text-sm">Manage your account security and preferences.</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-xl border border-gray-100">
+                      <h3 className="font-semibold text-ink mb-2">Change Password</h3>
+                      <p className="text-muted text-sm mb-4">Update your password to keep your account secure.</p>
+                      <button className="px-4 py-2 rounded-lg border border-teal text-teal text-sm font-semibold hover:bg-teal-light transition-colors">
+                        Change Password
+                      </button>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-gray-100">
+                      <h3 className="font-semibold text-ink mb-2">Two-Factor Authentication</h3>
+                      <p className="text-muted text-sm mb-4">Add an extra layer of security to your account.</p>
+                      <button className="px-4 py-2 rounded-lg bg-teal text-white text-sm font-semibold hover:bg-teal-dark transition-colors">
+                        Enable 2FA
+                      </button>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-gray-100">
+                      <h3 className="font-semibold text-ink mb-2">Download Your Data</h3>
+                      <p className="text-muted text-sm mb-4">Get a copy of all your volunteer data and certificates.</p>
+                      <button className="px-4 py-2 rounded-lg border border-gray-300 text-ink text-sm font-semibold hover:bg-sand transition-colors">
+                        Request Data Export
+                      </button>
+                    </div>
+
+                    <div className="p-4 rounded-xl border-2 border-red-200 bg-red-50">
+                      <h3 className="font-semibold text-red-600 mb-2">Delete Account</h3>
+                      <p className="text-red-600 text-sm mb-4">Permanently delete your account and all associated data. This action cannot be undone.</p>
+                      <button
+                        onClick={handleDeleteAccount}
+                        className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors"
+                      >
+                        Delete My Account
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+      </div>
+    </motion.div>
   );
 }
 
@@ -805,13 +1176,7 @@ const TAB_COMPONENTS = {
   'certificates': TabCertificates,
   'badges':       TabBadges,
   'portfolio':    TabPortfolio,
-  'settings':     () => (
-    <div className="flex flex-col items-center justify-center h-64 text-muted">
-      <Settings className="w-12 h-12 mb-4 opacity-30" />
-      <p className="font-serif text-xl text-ink mb-2">Settings</p>
-      <p className="text-sm">Account settings coming soon.</p>
-    </div>
-  ),
+  'settings':     TabSettings,
 };
 
 export default function VolunteerDashboard() {

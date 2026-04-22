@@ -1,10 +1,28 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [role, setRole] = useState(null);
+  // Initialize state from localStorage
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('servesphere_user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  
+  const [role, setRole] = useState(() => {
+    return localStorage.getItem('servesphere_role') || null;
+  });
+
+  // Persist to localStorage whenever user or role changes
+  useEffect(() => {
+    if (user && role) {
+      localStorage.setItem('servesphere_user', JSON.stringify(user));
+      localStorage.setItem('servesphere_role', role);
+    } else {
+      localStorage.removeItem('servesphere_user');
+      localStorage.removeItem('servesphere_role');
+    }
+  }, [user, role]);
 
   const login = (userData, userRole) => {
     setUser(userData);
@@ -14,6 +32,8 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     setRole(null);
+    localStorage.removeItem('servesphere_user');
+    localStorage.removeItem('servesphere_role');
   };
 
   return (
