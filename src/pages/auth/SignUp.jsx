@@ -12,7 +12,7 @@ const ROLES = [
 
 export default function SignUp() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { signup } = useAuth();
   const [role, setRole] = useState(null);
   const [dropOpen, setDropOpen] = useState(false);
   const [showPass, setShowPass] = useState(false);
@@ -78,7 +78,7 @@ export default function SignUp() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -86,14 +86,23 @@ export default function SignUp() {
       return;
     }
     
-    // Mock registration - in real app, this would call an API
-    const userData = {
-      email: formData.email,
-      name: formData.name,
-    };
-    
-    login(userData, selected.id);
-    navigate(selected.dashboard);
+    try {
+      // Create account in Firebase
+      const result = await signup(formData.email, formData.password, {
+        role: selected.id,
+        name: formData.name,
+      });
+      
+      if (!result.success) {
+        setErrors({ submit: result.error || 'Failed to create account' });
+        return;
+      }
+      
+      // Navigate to dashboard
+      navigate(selected.dashboard);
+    } catch (error) {
+      setErrors({ submit: 'Failed to create account. Please try again.' });
+    }
   };
 
   const getPasswordStrength = () => {

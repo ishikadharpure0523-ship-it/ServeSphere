@@ -1,13 +1,13 @@
 {
   "name": "servesphere-backend",
   "version": "1.0.0",
-  "description": "ServeSphere backend API",
+  "description": "ServeSphere backend API with Firebase integration",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js"
   },
-  "keywords": [],
+  "keywords": ["ngo", "volunteer", "donation", "social-impact"],
   "author": "",
   "license": "ISC",
   "type": "commonjs",

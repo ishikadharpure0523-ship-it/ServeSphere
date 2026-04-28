@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 import { Globe, Mail, Lock, Eye, EyeOff, ChevronDown, Users, Heart, Building, ArrowRight } from 'lucide-react';
-import { firebaseAuth } from '../../lib/firebase';
 import { saveProfile } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -37,19 +35,18 @@ export default function SignIn() {
       setError('');
       setLoading(true);
 
-      const credentials = await signInWithEmailAndPassword(firebaseAuth, email, password);
-      const token = await credentials.user.getIdToken();
+      // Use AuthContext login which handles everything
+      const result = await login(email, password);
+      
+      if (!result.success) {
+        setError(result.error || 'Login failed. Please check your credentials.');
+        return;
+      }
 
-      await saveProfile({ token, role: selected.id });
+      // Update profile with selected role
+      await saveProfile({ role: selected.id });
 
-      login(
-        {
-          uid: credentials.user.uid,
-          email: credentials.user.email,
-        },
-        selected.id
-      );
-
+      // Navigate to dashboard
       navigate(selected.dashboard);
     } catch (_submitError) {
       setError('Login failed. Check email, password, and backend Firebase setup.');
@@ -241,10 +238,10 @@ export default function SignIn() {
             <div className="bg-warm rounded-2xl p-5 border border-gray-100">
               <p className="text-sm font-semibold text-ink mb-4">New to ServeSphere? Join as:</p>
               <div className="space-y-2">
-                {ROLES.map(({ id, label, Icon, color, bg, dashboard }) => (
+                {ROLES.map(({ id, label, Icon, color, bg }) => (
                   <button
                     key={id}
-                    onClick={() => navigate(dashboard)}
+                    onClick={() => navigate('/signup')}
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-gray-100 hover:border-teal/40 hover:shadow-sm transition-all text-left group"
                   >
                     <div className={`w-9 h-9 rounded-full ${bg} flex items-center justify-center shrink-0`}>

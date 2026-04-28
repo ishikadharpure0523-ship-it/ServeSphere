@@ -1,46 +1,150 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  sendPasswordResetEmail
+} from 'firebase/auth';
+import { firebaseAuth } from '../lib/firebase';
+import api from '../lib/api';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  // Initialize state from localStorage
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('servesphere_user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-  
-  const [role, setRole] = useState(() => {
-    return localStorage.getItem('servesphere_role') || null;
-  });
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(null);
 
-  // Persist to localStorage whenever user or role changes
+  // Listen to Firebase auth state changes
   useEffect(() => {
-    if (user && role) {
-      localStorage.setItem('servesphere_user', JSON.stringify(user));
-      localStorage.setItem('servesphere_role', role);
-    } else {
-      localStorage.removeItem('servesphere_user');
-      localStorage.removeItem('servesphere_role');
-    }
-  }, [user, role]);
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const idToken = await firebaseUser.getIdToken();
+          setToken(idToken);
+          setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+          });
 
-  const login = (userData, userRole) => {
-    setUser(userData);
-    setRole(userRole);
+          // Fetch user profile from backend
+          const response = await api.get('/api/me', {
+            headers: { Authorization: `Bearer ${idToken}` }
+          });
+          
+          setProfile(response.data.profile);
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+        }
+      } else {
+        setUser(null);
+        setProfile(null);
+        setToken(null);
+      }
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  const signup = async (email, password, profileData) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+      const idToken = await userCredential.user.getIdToken();
+      
+      // Save profile to backend
+      const response = await api.post('/api/profile', profileData, {
+        headers: { Authorization: `Bearer ${idToken}` }
+      });
+      
+      setProfile(response.data.profile);
+      return { success: true };
+    } catch (error) {
+      console.error('Signup error:', error);
+      return { success: false, error: error.message };
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-    setRole(null);
-    localStorage.removeItem('servesphere_user');
-    localStorage.removeItem('servesphere_role');
+  const login = async (email, password) => {
+    try {
+      await signInWithEmailAndPassword(firebaseAuth, email, password);
+      return { success: true };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(firebaseAuth);
+      setUser(null);
+      setProfile(null);
+      setToken(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  const resetPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(firebaseAuth, email);
+      return { success: true };
+    } catch (error) {
+      console.error('Password reset error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const updateProfile = async (updates) => {
+    try {
+      const response = await api.put('/api/profile', updates, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setProfile(response.data.profile);
+      return { success: true };
+    } catch (error) {
+      console.error('Update profile error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  const getAuthToken = async () => {
+    if (firebaseAuth.currentUser) {
+      return await firebaseAuth.currentUser.getIdToken();
+    }
+    return null;
+  };
+
+  const value = {
+    user,
+    profile,
+    role: profile?.role,
+    loading,
+    token,
+    signup,
+    login,
+    logout,
+    resetPassword,
+    updateProfile,
+    getAuthToken,
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, login, logout }}>
-      {children}
+    <AuthContext.Provider value={value}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+};
