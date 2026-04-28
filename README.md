@@ -2,7 +2,7 @@
 
 ServeSphere is a comprehensive platform connecting NGOs, volunteers, and donors in India. Built with transparency, trust, and measurable impact at its core.
 
-## 🌟 Features
+## Features
 
 ### For Volunteers
 - **Discover Opportunities**: Browse verified NGOs and volunteer opportunities
@@ -13,56 +13,66 @@ ServeSphere is a comprehensive platform connecting NGOs, volunteers, and donors 
 - **SDG Tracking**: See which UN Sustainable Development Goals you're contributing to
 
 ### For Donors
-- **Browse NGOs**: Find verified organizations by cause, location, and trust score
-- **Pledge Donations**: Commit to supporting NGO projects
+- **Browse Fund Requests**: Find verified NGO fundraising campaigns by cause and urgency
+- **Make Donations**: Pledge donations to support NGO projects
 - **Impact Tracking**: See exactly how your donation was utilized
-- **Resource Donations**: Donate books, clothes, food, and more
-- **Donation History**: Track all your contributions
+- **Donation History**: Track all your contributions with detailed records
+- **Mock Data**: Demo fund requests available for testing
 
 ### For NGOs
+- **Verification System**: Complete organization verification to build trust
 - **Post Opportunities**: Find volunteers for your projects
 - **Manage Applications**: Review and accept volunteer applications
-- **Fundraising**: Create fund requests and track donations
+- **Fundraising**: Create fund requests and track donations received
 - **Transparency Tools**: Upload bills, photos, and impact reports
 - **Build Trust**: Increase trust score through verified activities
 - **Real-time Notifications**: Get instant updates on applications and donations
+- **Quick Actions**: Fast access to create opportunities and fund requests
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - **React 18** - UI library
-- **Vite** - Build tool
-- **React Router** - Navigation
-- **Tailwind CSS** - Styling
-- **Framer Motion** - Animations
-- **Firebase SDK** - Authentication & Real-time updates
-- **Axios** - HTTP client
-- **Lucide React** - Icons
-- **Recharts** - Data visualization
+- **Vite** - Build tool and dev server
+- **React Router** - Client-side routing
+- **Tailwind CSS** - Utility-first styling
+- **Framer Motion** - Animation library
+- **Firebase SDK** - Authentication and real-time updates
+- **Axios** - HTTP client for API requests
+- **Lucide React** - Icon library
 
 ### Backend
+- **Node.js** - JavaScript runtime
+- **Express.js** - Web application framework
+- **Firebase Admin SDK** - Server-side Firebase integration
+- **Firestore** - NoSQL cloud database
+- **Firebase Authentication** - User authentication service
+- **Firebase Storage** - File storage service
+- **CORS** - Cross-origin resource sharing
+- **dotenv** - Environment variable management
 
-## 📦 Installation
+## Installation
 
 ### Prerequisites
 - Node.js (v16 or higher)
 - npm or yarn
 - Firebase account
+- Git
 
 ### Quick Start
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/servesphere.git
-cd servesphere
+git clone https://github.com/ishikadharpure0523-ship-it/ServeSphere
+cd ServeSphere
 ```
 
 2. **Install dependencies**
 ```bash
-# Frontend
+# Frontend dependencies
 npm install
 
-# Backend
+# Backend dependencies
 cd backend
 npm install
 cd ..
@@ -75,6 +85,8 @@ Create `.env` in root directory:
 VITE_FIREBASE_API_KEY=your_firebase_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_firebase_app_id
 VITE_API_BASE_URL=http://localhost:5000
 ```
@@ -88,7 +100,11 @@ FIREBASE_SERVICE_ACCOUNT_PATH=./serviceAccountKey.json
 
 4. **Setup Firebase**
 - Follow the detailed [SETUP_GUIDE.md](./SETUP_GUIDE.md)
-- Download service account key and place in `backend/` folder
+- Create a Firebase project
+- Enable Authentication (Email/Password)
+- Create Firestore database
+- Enable Firebase Storage
+- Download service account key and place in `backend/` folder as `serviceAccountKey.json`
 
 5. **Run the application**
 
@@ -100,48 +116,43 @@ npm run dev
 Terminal 2 (Backend):
 ```bash
 cd backend
-npm run dev
+npm start
 ```
 
 Visit http://localhost:5173
 
-## 📚 Documentation
+**Note**: The application includes mock data for demonstration purposes. You can create real opportunities, fund requests, and donations alongside the demo data.
 
-- [Setup Guide](./SETUP_GUIDE.md) - Complete setup instructions
-- [Database Schema](./DATABASE_SCHEMA.md) - Data structure and relationships
-- [API Documentation](#api-documentation) - Backend API endpoints
 
-## 🔐 Security Features
+## Security Features
 
-- **Firebase Authentication**: Secure email/password authentication
+- **Firebase Authentication**: Secure email/password authentication with token-based API access
 - **Role-based Access Control**: Separate permissions for volunteers, donors, and NGOs
-- **Firestore Security Rules**: Database-level security
-- **Storage Security Rules**: File upload restrictions
+- **Firestore Security Rules**: Database-level security (to be configured)
+- **Storage Security Rules**: File upload restrictions (to be configured)
 - **Input Validation**: Server-side validation for all inputs
 - **XSS Protection**: Sanitized user inputs
+- **Environment Variables**: Sensitive credentials stored securely
+- **CORS Configuration**: Restricted cross-origin requests
 
-## 🎨 Design System
+## Key Features Implementation
 
-### Colors
-- **Teal** (#1D9E75) - Primary brand color
-- **Amber** (#F59E0B) - Volunteer actions
-- **Coral** (#F97316) - Donor actions
-- **Ink** (#1A1A14) - Text
-- **Sand** (#FAFAF8) - Background
-
-### Typography
-- **Headings**: DM Serif Display
-- **Body**: DM Sans
-
-## 📱 Key Features Implementation
-
-### Real Firebase Authentication
+### Firebase Authentication
 - Email/password signup and login
 - Token-based API authentication
-- Password reset functionality
-- Persistent sessions
+- Password reset functionality (ready to implement)
+- Persistent sessions with automatic token refresh
+- Role-based user profiles (Volunteer, Donor, NGO)
 
-### File Upload System
+### NGO Verification System
+- Multi-step verification form
+- Registration number validation
+- Contact information verification
+- Instant verification for demo (configurable for manual review)
+- Verified badge display
+- Trust score system
+
+### File Upload System (Ready for Implementation)
 - Profile images
 - Verification documents
 - Project photos
@@ -149,114 +160,141 @@ Visit http://localhost:5173
 - Image compression
 - File validation
 
-### Real-time Notifications
-- Firestore real-time listeners
-- Browser notifications
-- In-app notification center
-- Email notifications (configurable)
-- Notification preferences
-- Sound alerts
+### Notifications System
+- Backend notification creation
+- Firestore-based notification storage
+- API endpoints for fetching and marking as read
+- Real-time updates (frontend integration ready)
 
 ### Database & Storage
 - Firestore for structured data
-- Firebase Storage for files
-- Real-time synchronization
-- Offline support
-- Automatic backups
+- Collections: users, opportunities, applications, fundRequests, donations, notifications, certificates
+- Firebase Storage for files (configured)
+- Real-time synchronization capability
+- Scalable NoSQL architecture
 
-## 🚀 Deployment
+## Deployment
 
-### Frontend (Vercel)
+### Prerequisites
+- Google Cloud Platform account
+- Firebase project configured
+- Domain name (optional)
+
+### Frontend Deployment (Google Cloud / Firebase Hosting)
 ```bash
+# Build the frontend
 npm run build
-vercel --prod
+
+# Deploy to Firebase Hosting
+firebase deploy --only hosting
 ```
 
-### Backend (Railway/Render)
+### Backend Deployment (Google Cloud Run / App Engine)
 ```bash
 cd backend
-# Push to GitHub and connect to hosting platform
+
+# Deploy to Google Cloud Run
+gcloud run deploy servesphere-backend \
+  --source . \
+  --platform managed \
+  --region asia-south1 \
+  --allow-unauthenticated
+
+# Or deploy to App Engine
+gcloud app deploy
 ```
 
-See [SETUP_GUIDE.md](./SETUP_GUIDE.md) for detailed deployment instructions.
+### Environment Variables for Production
+Update `.env` files with production URLs and credentials before deployment.
 
-## 🧪 Testing
+## Testing
 
-### Test Accounts
-Create test accounts for each role:
-- Volunteer: volunteer@test.com
-- Donor: donor@test.com
-- NGO: ngo@test.com
+### Creating Test Accounts
+The application requires you to create accounts for testing:
 
-## 📊 API Documentation
+1. **Volunteer Account**: Sign up with role "Volunteer"
+2. **Donor Account**: Sign up with role "Donor"  
+3. **NGO Account**: Sign up with role "NGO"
 
-### Authentication
-- `POST /api/profile` - Create/update user profile
+Use any valid email format and a password with at least 6 characters.
+
+### Demo Data
+The application includes mock data for demonstration:
+- Mock volunteer opportunities (3 items)
+- Mock fund requests (4 items)
+- Mock data is clearly labeled and functional
+- Real data can be created alongside mock data
+
+## API Documentation
+
+All API endpoints require authentication via Bearer token in the Authorization header.
+
+### Authentication & Profile
+- `GET /api/health` - Health check endpoint
 - `GET /api/me` - Get current user profile
+- `POST /api/profile` - Create/update user profile
+- `PUT /api/profile` - Update user profile
 
-### Opportunities
-- `GET /api/opportunities` - List opportunities
+### Opportunities (Volunteer)
+- `GET /api/opportunities` - List all opportunities (supports filters)
+- `GET /api/opportunities/:id` - Get single opportunity
 - `POST /api/opportunities` - Create opportunity (NGO only)
-- `PUT /api/opportunities/:id` - Update opportunity
+- `PUT /api/opportunities/:id` - Update opportunity (NGO only)
 
 ### Applications
-- `GET /api/applications` - List applications
-- `POST /api/applications` - Apply to opportunity
-- `PUT /api/applications/:id` - Update application status
+- `GET /api/applications` - List applications (filtered by role)
+- `POST /api/applications` - Apply to opportunity (Volunteer only)
+- `PUT /api/applications/:id` - Update application status (NGO only)
+
+### Fund Requests
+- `GET /api/fund-requests` - List fund requests (supports status filter)
+- `POST /api/fund-requests` - Create fund request (NGO only)
 
 ### Donations
-- `GET /api/donations` - List donations
-- `POST /api/donations` - Create donation pledge
+- `GET /api/donations` - List donations (filtered by role: donor or NGO)
+- `POST /api/donations` - Create donation pledge (Donor only)
+
+### Certificates
+- `GET /api/certificates` - List user certificates
+- `GET /api/certificates/:code/verify` - Verify certificate by code
 
 ### Notifications
-- `GET /api/notifications` - List notifications
-- `PUT /api/notifications/:id/read` - Mark as read
-- `PUT /api/notifications/mark-all-read` - Mark all as read
+- `GET /api/notifications` - List user notifications
+- `PUT /api/notifications/:id/read` - Mark notification as read
+- `PUT /api/notifications/mark-all-read` - Mark all notifications as read
 
-### Stats
-- `GET /api/stats/volunteer` - Volunteer statistics
-- `GET /api/stats/ngo` - NGO statistics
-- `GET /api/stats/donor` - Donor statistics
+### Statistics
+- `GET /api/stats/volunteer` - Get volunteer statistics
+- `GET /api/stats/ngo` - Get NGO statistics
+- `GET /api/stats/donor` - Get donor statistics
 
-## 🤝 Contributing
+## Project Structure
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+```
+ServeSphere/
+├── backend/
+│   ├── index.js              # Express server and API routes
+│   ├── firebaseAdmin.js      # Firebase Admin SDK configuration
+│   ├── package.json          # Backend dependencies
+│   ├── .env                  # Backend environment variables
+│   └── serviceAccountKey.json # Firebase service account (not in git)
+├── src/
+│   ├── components/           # Reusable React components
+│   ├── context/              # React context (AuthContext)
+│   ├── lib/                  # Utility functions (api, firebase, storage)
+│   ├── pages/                # Page components
+│   │   ├── auth/            # Authentication pages
+│   │   └── dashboard/       # Dashboard pages
+│   ├── App.jsx              # Main app component
+│   └── main.jsx             # App entry point
+├── public/                   # Static assets
+├── .env                      # Frontend environment variables
+├── package.json              # Frontend dependencies
+├── vite.config.js           # Vite configuration
+├── tailwind.config.js       # Tailwind CSS configuration
+└── README.md                # This file
+```
 
-## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
 
-- Firebase for backend infrastructure
-- Tailwind CSS for styling system
-- Framer Motion for animations
-- Lucide for icons
-
-## 📧 Contact
-
-- Website: https://servesphere.org
-- Email: support@servesphere.org
-- Twitter: @servesphere
-
-## 🗺️ Roadmap
-
-- [ ] Payment gateway integration
-- [ ] Mobile app (React Native)
-- [ ] SMS notifications
-- [ ] Multi-language support
-- [ ] Admin dashboard
-- [ ] Analytics dashboard
-- [ ] Volunteer matching algorithm
-- [ ] Impact reports generator
-- [ ] Social media integration
-- [ ] Volunteer time tracking
-- [ ] NGO verification system
-
----
-
-Built with ❤️ for social impact in India
