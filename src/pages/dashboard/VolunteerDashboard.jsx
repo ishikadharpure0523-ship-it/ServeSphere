@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -7,6 +7,13 @@ import {
   Download, Share2, Edit3, ExternalLink, Zap, Shield, Heart, Leaf, User, Bell,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { 
+  getOpportunities, 
+  createApplication, 
+  getApplications,
+  getCertificates,
+  getVolunteerStats
+} from '../../lib/api';
 
 /* ── Shared fade-up variant ─────────────────────────────────── */
 const fadeUp = {
@@ -234,23 +241,113 @@ function TabOverview() {
 const CAUSES = ['All', 'Education', 'Healthcare', 'Environment', 'Women Empowerment'];
 const TIMES  = ['All', '1 day', '1 week', '1 month', 'Ongoing'];
 
-function TabFindNGOs() {
-  const [search, setSearch]       = useState('');
-  const [activeCause, setCause]   = useState('All');
-  const [activeTime, setTime]     = useState('All');
-  const [certOnly, setCertOnly]   = useState(false);
+// Mock opportunities for demo
+const MOCK_OPPORTUNITIES = [
+  {
+    id: 'mock-1',
+    title: 'Weekend Teaching Program',
+    description: 'Help underprivileged children with Math and Science on weekends. Make a real difference in their education.',
+    ngoName: 'Teach India Foundation',
+    city: 'Mumbai',
+    cause: 'Education',
+    duration: '2 months',
+    volunteersNeeded: 10,
+    volunteersApplied: 3,
+    status: 'open',
+    certificateOffered: true,
+    skills: ['Teaching', 'Communication'],
+  },
+  {
+    id: 'mock-2',
+    title: 'Medical Camp Assistant',
+    description: 'Assist doctors and nurses in organizing free medical camps in rural areas. Help with patient registration and basic first aid.',
+    ngoName: 'Health For All',
+    city: 'Pune',
+    cause: 'Healthcare',
+    duration: '1 week',
+    volunteersNeeded: 15,
+    volunteersApplied: 8,
+    status: 'open',
+    certificateOffered: true,
+    skills: ['First Aid', 'Communication'],
+  },
+  {
+    id: 'mock-3',
+    title: 'Tree Plantation Drive',
+    description: 'Join us in planting 500 saplings across the city. Help combat climate change and make our city greener.',
+    ngoName: 'Green Earth India',
+    city: 'Delhi',
+    cause: 'Environment',
+    duration: '1 day',
+    volunteersNeeded: 20,
+    volunteersApplied: 15,
+    status: 'open',
+    certificateOffered: false,
+    skills: ['Physical Fitness'],
+  },
+  {
+    id: 'mock-4',
+    title: 'Women Empowerment Workshop',
+    description: 'Help organize and conduct skill development workshops for women in rural areas. Teach basic computer skills and financial literacy.',
+    ngoName: 'Shakti Foundation',
+    city: 'Bangalore',
+    cause: 'Women Empowerment',
+    duration: '1 month',
+    volunteersNeeded: 8,
+    volunteersApplied: 2,
+    status: 'open',
+    certificateOffered: true,
+    skills: ['Teaching', 'Computer Skills'],
+  },
+];
 
-  const filtered = NGOS.filter((n) => {
-    const matchSearch = n.name.toLowerCase().includes(search.toLowerCase()) || n.cause.toLowerCase().includes(search.toLowerCase());
-    const matchCause  = activeCause === 'All' || n.cause === activeCause;
-    return matchSearch && matchCause;
+function TabFindNGOs() {
+  const [search, setSearch] = useState('');
+  const [activeCause, setCause] = useState('All');
+  const [activeTime, setTime] = useState('All');
+  const [certOnly, setCertOnly] = useState(false);
+  const [opportunities, setOpportunities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedOpp, setSelectedOpp] = useState(null);
+
+  useEffect(() => {
+    fetchOpportunities();
+  }, [activeCause]);
+
+  const fetchOpportunities = async () => {
+    try {
+      const filters = {};
+      if (activeCause !== 'All') filters.cause = activeCause;
+      if (certOnly) filters.certificateOffered = true;
+      
+      const response = await getOpportunities(filters);
+      // Combine real opportunities with mock ones
+      const realOpps = response.data.opportunities || [];
+      setOpportunities([...MOCK_OPPORTUNITIES, ...realOpps]);
+    } catch (error) {
+      console.error('Failed to fetch opportunities:', error);
+      // If API fails, at least show mock data
+      setOpportunities(MOCK_OPPORTUNITIES);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filtered = opportunities.filter((opp) => {
+    const matchSearch = opp.title.toLowerCase().includes(search.toLowerCase()) || 
+                       opp.description.toLowerCase().includes(search.toLowerCase());
+    return matchSearch;
   });
+
+  if (loading) {
+    return <div className="text-center py-12">Loading opportunities...</div>;
+  }
 
   return (
     <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-6">
       <motion.div variants={fadeUp}>
-        <h1 className="font-serif text-3xl text-ink mb-1">Find NGOs</h1>
-        <p className="text-muted text-sm">Discover verified organisations looking for volunteers like you.</p>
+        <h1 className="font-serif text-3xl text-ink mb-1">Find Opportunities</h1>
+        <p className="text-muted text-sm">Discover verified opportunities from NGOs looking for volunteers like you.</p>
       </motion.div>
 
       {/* Search bar */}
@@ -260,13 +357,10 @@ function TabFindNGOs() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by NGO name or cause..."
+            placeholder="Search opportunities..."
             className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal focus:border-teal outline-none text-sm bg-white"
           />
         </div>
-        <button className="px-5 py-3 rounded-xl border border-gray-200 bg-white text-muted text-sm font-medium hover:border-teal hover:text-teal transition-colors flex items-center gap-2">
-          <Settings className="w-4 h-4" /> Filters
-        </button>
       </motion.div>
 
       {/* Filter chips */}
@@ -283,22 +377,13 @@ function TabFindNGOs() {
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-xs text-muted font-medium uppercase tracking-wider w-24">Time</span>
-          {TIMES.map((t) => (
-            <button
-              key={t}
-              onClick={() => setTime(t)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${activeTime === t ? 'bg-teal text-white' : 'bg-white border border-gray-200 text-muted hover:border-teal hover:text-teal'}`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted font-medium uppercase tracking-wider w-24">Certificate</span>
           <button
-            onClick={() => setCertOnly(!certOnly)}
+            onClick={() => {
+              setCertOnly(!certOnly);
+              fetchOpportunities();
+            }}
             className={`relative w-11 h-6 rounded-full transition-colors ${certOnly ? 'bg-teal' : 'bg-gray-200'}`}
           >
             <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${certOnly ? 'translate-x-5' : ''}`} />
@@ -307,35 +392,163 @@ function TabFindNGOs() {
         </div>
       </motion.div>
 
-      {/* NGO Cards */}
-      <motion.div variants={stagger} className="grid md:grid-cols-2 gap-5">
-        {filtered.map(({ id, name, initials, cause, city, trust, desc, roles, banner }) => (
-          <motion.div key={id} variants={fadeUp} className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-            {/* Banner */}
-            <div className={`${banner} h-16 relative`}>
-              <div className="absolute -bottom-5 left-5 w-12 h-12 rounded-full bg-white border-2 border-white shadow flex items-center justify-center font-bold text-ink text-sm">
-                {initials}
+      {/* Opportunity Cards */}
+      {filtered.length === 0 ? (
+        <motion.div variants={fadeUp} className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+          <Search className="w-16 h-16 text-muted mx-auto mb-4" />
+          <h3 className="font-serif text-xl text-ink mb-2">No opportunities found</h3>
+          <p className="text-muted">Try adjusting your filters or check back later.</p>
+        </motion.div>
+      ) : (
+        <motion.div variants={stagger} className="grid md:grid-cols-2 gap-5">
+          {filtered.map((opp) => (
+            <motion.div key={opp.id} variants={fadeUp} className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-grow">
+                    <h3 className="font-serif text-lg text-ink mb-1">{opp.title}</h3>
+                    <p className="text-sm text-muted">{opp.ngoName}</p>
+                  </div>
+                  {opp.certificateOffered && (
+                    <Award className="w-5 h-5 text-amber shrink-0" title="Certificate offered" />
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-3 mb-3 text-xs text-muted">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3 h-3" /> {opp.city}
+                  </span>
+                  <span className="px-2 py-1 bg-teal-light text-teal-dark rounded-full font-semibold">
+                    {opp.cause}
+                  </span>
+                </div>
+                
+                <p className="text-muted text-sm mb-4 line-clamp-3">{opp.description}</p>
+                
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <div className="text-sm text-muted">
+                    <span className="font-semibold text-ink">{opp.volunteersApplied || 0}</span> / {opp.volunteersNeeded} applied
+                  </div>
+                  <button 
+                    onClick={() => setSelectedOpp(opp)}
+                    className="px-4 py-2 rounded-lg bg-teal text-white text-sm font-semibold hover:bg-teal-dark transition-colors"
+                  >
+                    Apply Now
+                  </button>
+                </div>
               </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      )}
+
+      {/* Apply Modal */}
+      <AnimatePresence>
+        {selectedOpp && (
+          <ApplyModal 
+            opportunity={selectedOpp}
+            onClose={() => setSelectedOpp(null)}
+            onSuccess={() => {
+              setSelectedOpp(null);
+              alert('Application submitted successfully!');
+            }}
+          />
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+/* ── Apply Modal ────────────────────────────────────────────── */
+function ApplyModal({ opportunity, onClose, onSuccess }) {
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      // Check if it's a mock opportunity
+      if (opportunity.id.startsWith('mock-')) {
+        // Simulate success for mock data
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        alert('Application submitted successfully! (Demo mode - this is mock data)');
+        onSuccess();
+        return;
+      }
+
+      // Real API call for actual opportunities
+      await createApplication({
+        opportunityId: opportunity.id,
+        message,
+      });
+      onSuccess();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to submit application');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white rounded-2xl max-w-lg w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="font-serif text-2xl text-ink">Apply to Opportunity</h2>
+          <p className="text-muted text-sm mt-1">{opportunity.title}</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              {error}
             </div>
-            <div className="pt-8 px-5 pb-5">
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-serif text-lg text-ink">{name}</h3>
-                <span className="text-xs font-semibold text-teal bg-teal-light px-2.5 py-1 rounded-full">Trust: {trust}</span>
-              </div>
-              <div className="flex items-center gap-3 mb-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted bg-warm px-2.5 py-1 rounded-full">{cause}</span>
-                <span className="flex items-center gap-1 text-xs text-muted">
-                  <MapPin className="w-3 h-3" />{city}
-                </span>
-              </div>
-              <p className="text-muted text-sm leading-relaxed mb-3">{desc}</p>
-              <p className="text-muted text-xs mb-4">{roles} open roles</p>
-              <button className="w-full py-2.5 rounded-xl bg-teal text-white text-sm font-semibold hover:bg-teal-dark transition-colors">
-                View Opportunities
-              </button>
-            </div>
-          </motion.div>
-        ))}
+          )}
+
+          <div>
+            <label className="block text-sm font-semibold text-ink mb-2">Why do you want to volunteer?</label>
+            <textarea
+              required
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Tell the NGO why you're interested and what you can contribute..."
+              rows={5}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal focus:border-teal outline-none resize-none"
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-6 py-3 rounded-xl border border-gray-200 text-muted font-semibold hover:bg-sand transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-6 py-3 rounded-xl bg-teal text-white font-semibold hover:bg-teal-dark transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Submitting...' : 'Submit Application'}
+            </button>
+          </div>
+        </form>
       </motion.div>
     </motion.div>
   );

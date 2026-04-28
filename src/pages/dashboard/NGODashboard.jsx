@@ -16,7 +16,8 @@ import {
   getDonations,
   createOpportunity,
   createFundRequest,
-  updateApplication
+  updateApplication,
+  updateProfile
 } from '../../lib/api';
 
 /* ── Animation Variants ─────────────────────────────────────── */
@@ -38,10 +39,11 @@ const NAV_ITEMS = [
 /* ══════════════════════════════════════════════════════════════
    TAB 1 — OVERVIEW
 ══════════════════════════════════════════════════════════════ */
-function TabOverview() {
+function TabOverview({ onShowCreateOpportunity, onShowCreateFundRequest }) {
   const { profile } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -99,7 +101,10 @@ function TabOverview() {
       <motion.div variants={fadeUp} className="bg-white rounded-xl border border-gray-100 p-6">
         <h2 className="font-serif text-xl text-ink mb-5">Quick Actions</h2>
         <div className="grid md:grid-cols-3 gap-4">
-          <button className="flex items-center gap-3 p-4 rounded-xl border-2 border-teal text-left hover:bg-teal-light transition-colors">
+          <button 
+            onClick={onShowCreateOpportunity}
+            className="flex items-center gap-3 p-4 rounded-xl border-2 border-teal text-left hover:bg-teal-light transition-colors"
+          >
             <div className="w-10 h-10 rounded-full bg-teal flex items-center justify-center shrink-0">
               <Plus className="w-5 h-5 text-white" />
             </div>
@@ -108,7 +113,10 @@ function TabOverview() {
               <p className="text-muted text-xs">Find volunteers</p>
             </div>
           </button>
-          <button className="flex items-center gap-3 p-4 rounded-xl border-2 border-coral text-left hover:bg-coral-light transition-colors">
+          <button 
+            onClick={onShowCreateFundRequest}
+            className="flex items-center gap-3 p-4 rounded-xl border-2 border-coral text-left hover:bg-coral-light transition-colors"
+          >
             <div className="w-10 h-10 rounded-full bg-coral flex items-center justify-center shrink-0">
               <DollarSign className="w-5 h-5 text-white" />
             </div>
@@ -117,7 +125,10 @@ function TabOverview() {
               <p className="text-muted text-xs">Raise funds</p>
             </div>
           </button>
-          <button className="flex items-center gap-3 p-4 rounded-xl border-2 border-amber text-left hover:bg-amber-light transition-colors">
+          <button 
+            onClick={() => alert('Impact report upload coming soon!')}
+            className="flex items-center gap-3 p-4 rounded-xl border-2 border-amber text-left hover:bg-amber-light transition-colors"
+          >
             <div className="w-10 h-10 rounded-full bg-amber flex items-center justify-center shrink-0">
               <Upload className="w-5 h-5 text-white" />
             </div>
@@ -141,13 +152,182 @@ function TabOverview() {
               <p className="text-muted text-sm mb-3">
                 Complete your verification to unlock full platform features and build trust with volunteers and donors.
               </p>
-              <button className="px-4 py-2 rounded-lg bg-amber text-white text-sm font-semibold hover:bg-amber-dark transition-colors">
+              <button 
+                onClick={() => setShowVerificationModal(true)}
+                className="px-4 py-2 rounded-lg bg-amber text-white text-sm font-semibold hover:bg-amber-dark transition-colors"
+              >
                 Complete Verification
               </button>
             </div>
           </div>
         </motion.div>
       )}
+
+      {/* Verification Modal */}
+      <AnimatePresence>
+        {showVerificationModal && (
+          <VerificationModal 
+            onClose={() => setShowVerificationModal(false)}
+          />
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+/* ── Verification Modal ─────────────────────────────────────── */
+function VerificationModal({ onClose }) {
+  const { profile, refreshProfile } = useAuth();
+  const [formData, setFormData] = useState({
+    registrationNumber: profile?.registrationNumber || '',
+    address: profile?.address || '',
+    website: profile?.website || '',
+    contactPerson: profile?.contactPerson || '',
+    contactPhone: profile?.contactPhone || '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      // Update profile with verification details
+      await updateProfile({
+        ...formData,
+        verificationStatus: 'verified', // Auto-verify for demo
+      });
+      
+      // Refresh profile to get updated data
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+      
+      alert('Verification submitted successfully! Your account is now verified.');
+      onClose();
+      window.location.reload(); // Refresh to show updated status
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to submit verification');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="font-serif text-2xl text-ink">Complete Verification</h2>
+          <p className="text-muted text-sm mt-1">Provide your organization details to get verified</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-semibold text-ink mb-2">Registration Number *</label>
+            <input
+              type="text"
+              required
+              value={formData.registrationNumber}
+              onChange={(e) => setFormData({ ...formData, registrationNumber: e.target.value })}
+              placeholder="e.g., NGO/2024/12345"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber focus:border-amber outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-ink mb-2">Organization Address *</label>
+            <textarea
+              required
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              placeholder="Full registered address"
+              rows={3}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber focus:border-amber outline-none resize-none"
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-ink mb-2">Website</label>
+              <input
+                type="url"
+                value={formData.website}
+                onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                placeholder="https://yourorganization.org"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber focus:border-amber outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-ink mb-2">Contact Person *</label>
+              <input
+                type="text"
+                required
+                value={formData.contactPerson}
+                onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
+                placeholder="Full name"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber focus:border-amber outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-ink mb-2">Contact Phone *</label>
+            <input
+              type="tel"
+              required
+              value={formData.contactPhone}
+              onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+              placeholder="+91 XXXXXXXXXX"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-amber focus:border-amber outline-none"
+            />
+          </div>
+
+          <div className="bg-amber-light rounded-xl p-4">
+            <p className="text-sm text-ink">
+              <strong>Note:</strong> For demo purposes, your account will be verified immediately upon submission. 
+              In production, this would require manual review by administrators.
+            </p>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-6 py-3 rounded-xl border border-gray-200 text-muted font-semibold hover:bg-sand transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-6 py-3 rounded-xl bg-amber text-white font-semibold hover:bg-amber-dark transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Submitting...' : 'Submit Verification'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
     </motion.div>
   );
 }
@@ -155,6 +335,52 @@ function TabOverview() {
 /* ══════════════════════════════════════════════════════════════
    TAB 2 — OPPORTUNITIES
 ══════════════════════════════════════════════════════════════ */
+// Mock opportunities for demo
+const MOCK_OPPORTUNITIES = [
+  {
+    id: 'mock-1',
+    title: 'Weekend Teaching Program',
+    description: 'Help underprivileged children with Math and Science on weekends. Make a real difference in their education.',
+    city: 'Mumbai',
+    cause: 'Education',
+    duration: '2 months',
+    volunteersNeeded: 10,
+    volunteersApplied: 3,
+    status: 'open',
+    certificateOffered: true,
+    skills: ['Teaching', 'Communication'],
+    isMock: true,
+  },
+  {
+    id: 'mock-2',
+    title: 'Medical Camp Assistant',
+    description: 'Assist doctors and nurses in organizing free medical camps in rural areas. Help with patient registration and basic first aid.',
+    city: 'Pune',
+    cause: 'Healthcare',
+    duration: '1 week',
+    volunteersNeeded: 15,
+    volunteersApplied: 8,
+    status: 'open',
+    certificateOffered: true,
+    skills: ['First Aid', 'Communication'],
+    isMock: true,
+  },
+  {
+    id: 'mock-3',
+    title: 'Tree Plantation Drive',
+    description: 'Join us in planting 500 saplings across the city. Help combat climate change and make our city greener.',
+    city: 'Delhi',
+    cause: 'Environment',
+    duration: '1 day',
+    volunteersNeeded: 20,
+    volunteersApplied: 15,
+    status: 'open',
+    certificateOffered: false,
+    skills: ['Physical Fitness'],
+    isMock: true,
+  },
+];
+
 function TabOpportunities() {
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -162,14 +388,26 @@ function TabOpportunities() {
 
   useEffect(() => {
     fetchOpportunities();
+    
+    // Listen for event to show create modal
+    const handleShowCreate = () => setShowCreateModal(true);
+    window.addEventListener('show-create-opportunity', handleShowCreate);
+    
+    return () => {
+      window.removeEventListener('show-create-opportunity', handleShowCreate);
+    };
   }, []);
 
   const fetchOpportunities = async () => {
     try {
       const response = await getOpportunities();
-      setOpportunities(response.data.opportunities);
+      // Combine real opportunities with mock ones
+      const realOpps = response.data.opportunities || [];
+      setOpportunities([...MOCK_OPPORTUNITIES, ...realOpps]);
     } catch (error) {
       console.error('Failed to fetch opportunities:', error);
+      // If API fails, at least show mock data
+      setOpportunities(MOCK_OPPORTUNITIES);
     } finally {
       setLoading(false);
     }
@@ -251,6 +489,205 @@ function TabOpportunities() {
           ))}
         </motion.div>
       )}
+
+      {/* Create Opportunity Modal */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <CreateOpportunityModal 
+            onClose={() => setShowCreateModal(false)}
+            onSuccess={() => {
+              setShowCreateModal(false);
+              fetchOpportunities();
+            }}
+          />
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+/* ── Create Opportunity Modal ───────────────────────────────── */
+function CreateOpportunityModal({ onClose, onSuccess }) {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    cause: 'Education',
+    city: '',
+    duration: '',
+    volunteersNeeded: 1,
+    skills: '',
+    certificateOffered: true,
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      await createOpportunity({
+        ...formData,
+        skills: formData.skills.split(',').map(s => s.trim()).filter(Boolean),
+      });
+      onSuccess();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to create opportunity');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="font-serif text-2xl text-ink">Post New Opportunity</h2>
+          <p className="text-muted text-sm mt-1">Fill in the details to attract volunteers</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-semibold text-ink mb-2">Opportunity Title *</label>
+            <input
+              type="text"
+              required
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="e.g., Weekend Tutoring for Underprivileged Children"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal focus:border-teal outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-ink mb-2">Description *</label>
+            <textarea
+              required
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Describe the opportunity, responsibilities, and impact..."
+              rows={4}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal focus:border-teal outline-none resize-none"
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-ink mb-2">Cause *</label>
+              <select
+                value={formData.cause}
+                onChange={(e) => setFormData({ ...formData, cause: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal focus:border-teal outline-none"
+              >
+                <option>Education</option>
+                <option>Healthcare</option>
+                <option>Environment</option>
+                <option>Women Empowerment</option>
+                <option>Animal Welfare</option>
+                <option>Disaster Relief</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-ink mb-2">City *</label>
+              <input
+                type="text"
+                required
+                value={formData.city}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                placeholder="e.g., Mumbai"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal focus:border-teal outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-ink mb-2">Duration *</label>
+              <input
+                type="text"
+                required
+                value={formData.duration}
+                onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                placeholder="e.g., 2 weekends, 1 month"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal focus:border-teal outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-ink mb-2">Volunteers Needed *</label>
+              <input
+                type="number"
+                required
+                min="1"
+                value={formData.volunteersNeeded}
+                onChange={(e) => setFormData({ ...formData, volunteersNeeded: parseInt(e.target.value) })}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal focus:border-teal outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-ink mb-2">Required Skills (comma-separated)</label>
+            <input
+              type="text"
+              value={formData.skills}
+              onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
+              placeholder="e.g., Teaching, Communication, Patience"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal focus:border-teal outline-none"
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="certificate"
+              checked={formData.certificateOffered}
+              onChange={(e) => setFormData({ ...formData, certificateOffered: e.target.checked })}
+              className="w-5 h-5 rounded border-gray-300 text-teal focus:ring-teal"
+            />
+            <label htmlFor="certificate" className="text-sm text-ink">
+              Offer certificate upon completion
+            </label>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-6 py-3 rounded-xl border border-gray-200 text-muted font-semibold hover:bg-sand transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-6 py-3 rounded-xl bg-teal text-white font-semibold hover:bg-teal-dark transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Creating...' : 'Post Opportunity'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
     </motion.div>
   );
 }
@@ -380,9 +817,18 @@ function TabFundraising() {
   const [fundRequests, setFundRequests] = useState([]);
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
     fetchData();
+    
+    // Listen for event to show create modal
+    const handleShowCreate = () => setShowCreateModal(true);
+    window.addEventListener('show-create-fund-request', handleShowCreate);
+    
+    return () => {
+      window.removeEventListener('show-create-fund-request', handleShowCreate);
+    };
   }, []);
 
   const fetchData = async () => {
@@ -391,8 +837,8 @@ function TabFundraising() {
         getFundRequests(),
         getDonations()
       ]);
-      setFundRequests(fundsRes.data.fundRequests);
-      setDonations(donationsRes.data.donations);
+      setFundRequests(fundsRes.data.fundRequests || []);
+      setDonations(donationsRes.data.donations || []);
     } catch (error) {
       console.error('Failed to fetch fundraising data:', error);
     } finally {
@@ -407,75 +853,244 @@ function TabFundraising() {
   const totalRaised = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
 
   return (
-    <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-6">
-      <motion.div variants={fadeUp} className="flex items-center justify-between">
-        <div>
-          <h1 className="font-serif text-3xl text-ink mb-1">Fundraising</h1>
-          <p className="text-muted text-sm">Manage fund requests and track donations.</p>
-        </div>
-        <button className="flex items-center gap-2 px-5 py-3 rounded-xl bg-coral text-white font-semibold hover:opacity-90 transition-opacity">
-          <Plus className="w-4 h-4" /> Create Fund Request
-        </button>
-      </motion.div>
-
-      {/* Total raised */}
-      <motion.div variants={fadeUp} className="bg-gradient-to-br from-coral to-coral/80 rounded-xl p-8 text-white">
-        <div className="flex items-center justify-between">
+    <>
+      <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-6">
+        <motion.div variants={fadeUp} className="flex items-center justify-between">
           <div>
-            <p className="text-white/80 text-sm mb-1">Total Funds Raised</p>
-            <p className="font-serif text-4xl">₹{totalRaised.toLocaleString('en-IN')}</p>
-            <p className="text-white/80 text-sm mt-2">{donations.length} donations received</p>
+            <h1 className="font-serif text-3xl text-ink mb-1">Fundraising</h1>
+            <p className="text-muted text-sm">Manage fund requests and track donations.</p>
           </div>
-          <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
-            <TrendingUp className="w-10 h-10" />
-          </div>
-        </div>
-      </motion.div>
+          <button 
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-coral text-white font-semibold hover:opacity-90 transition-opacity"
+          >
+            <Plus className="w-4 h-4" /> Create Fund Request
+          </button>
+        </motion.div>
 
-      {/* Fund requests */}
-      <motion.div variants={fadeUp} className="bg-white rounded-xl border border-gray-100 p-6">
-        <h2 className="font-serif text-xl text-ink mb-5">Active Fund Requests</h2>
-        {fundRequests.length === 0 ? (
-          <div className="text-center py-8">
-            <DollarSign className="w-12 h-12 text-muted mx-auto mb-3" />
-            <p className="text-muted">No active fund requests</p>
+        {/* Total raised */}
+        <motion.div variants={fadeUp} className="bg-gradient-to-br from-coral to-coral/80 rounded-xl p-8 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-white/80 text-sm mb-1">Total Funds Raised</p>
+              <p className="font-serif text-4xl">₹{totalRaised.toLocaleString('en-IN')}</p>
+              <p className="text-white/80 text-sm mt-2">{donations.length} donations received</p>
+            </div>
+            <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
+              <TrendingUp className="w-10 h-10" />
+            </div>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {fundRequests.map((req) => (
-              <div key={req.id} className="p-4 rounded-xl border border-gray-100 hover:bg-sand transition-colors">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="font-semibold text-ink">{req.title}</h3>
-                    <p className="text-sm text-muted">{req.cause}</p>
-                  </div>
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-teal-light text-teal-dark">
-                    {req.status}
-                  </span>
-                </div>
-                
-                <div className="mb-3">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-muted">Progress</span>
-                    <span className="font-semibold text-ink">
-                      ₹{(req.raisedAmount || 0).toLocaleString('en-IN')} / ₹{req.targetAmount.toLocaleString('en-IN')}
+        </motion.div>
+
+        {/* Fund requests */}
+        <motion.div variants={fadeUp} className="bg-white rounded-xl border border-gray-100 p-6">
+          <h2 className="font-serif text-xl text-ink mb-5">Active Fund Requests</h2>
+          {fundRequests.length === 0 ? (
+            <div className="text-center py-8">
+              <DollarSign className="w-12 h-12 text-muted mx-auto mb-3" />
+              <p className="text-muted mb-4">No active fund requests</p>
+              <button 
+                onClick={() => setShowCreateModal(true)}
+                className="px-6 py-3 rounded-xl bg-coral text-white font-semibold hover:opacity-90 transition-opacity"
+              >
+                Create Your First Request
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {fundRequests.map((req) => (
+                <div key={req.id} className="p-4 rounded-xl border border-gray-100 hover:bg-sand transition-colors">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="font-semibold text-ink">{req.title}</h3>
+                      <p className="text-sm text-muted">{req.cause}</p>
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-teal-light text-teal-dark">
+                      {req.status}
                     </span>
                   </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-coral rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(((req.raisedAmount || 0) / req.targetAmount) * 100, 100)}%` }}
-                    />
+                  
+                  <div className="mb-3">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-muted">Progress</span>
+                      <span className="font-semibold text-ink">
+                        ₹{(req.amountRaised || req.raisedAmount || 0).toLocaleString('en-IN')} / ₹{req.targetAmount.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-coral rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(((req.amountRaised || req.raisedAmount || 0) / req.targetAmount) * 100, 100)}%` }}
+                      />
+                    </div>
                   </div>
+                  
+                  <p className="text-sm text-muted line-clamp-2">{req.description}</p>
                 </div>
-                
-                <button className="text-sm text-teal font-semibold hover:underline">
-                  View Details →
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      </motion.div>
+
+      {/* Create Fund Request Modal */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <CreateFundRequestModal 
+            onClose={() => setShowCreateModal(false)}
+            onSuccess={() => {
+              setShowCreateModal(false);
+              fetchData();
+            }}
+          />
         )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+/* ── Create Fund Request Modal ──────────────────────────────── */
+function CreateFundRequestModal({ onClose, onSuccess }) {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    targetAmount: '',
+    cause: 'Education',
+    urgent: false,
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      await createFundRequest({
+        ...formData,
+        targetAmount: parseFloat(formData.targetAmount),
+      });
+      onSuccess();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to create fund request');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="font-serif text-2xl text-ink">Create Fund Request</h2>
+          <p className="text-muted text-sm mt-1">Request funds from donors for your cause</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-semibold text-ink mb-2">Request Title *</label>
+            <input
+              type="text"
+              required
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="e.g., School Supplies for 100 Children"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-coral focus:border-coral outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-ink mb-2">Description *</label>
+            <textarea
+              required
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Describe what the funds will be used for..."
+              rows={4}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-coral focus:border-coral outline-none resize-none"
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-ink mb-2">Target Amount (₹) *</label>
+              <input
+                type="number"
+                required
+                min="1"
+                value={formData.targetAmount}
+                onChange={(e) => setFormData({ ...formData, targetAmount: e.target.value })}
+                placeholder="50000"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-coral focus:border-coral outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-ink mb-2">Cause *</label>
+              <select
+                value={formData.cause}
+                onChange={(e) => setFormData({ ...formData, cause: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-coral focus:border-coral outline-none"
+              >
+                <option>Education</option>
+                <option>Healthcare</option>
+                <option>Environment</option>
+                <option>Women Empowerment</option>
+                <option>Animal Welfare</option>
+                <option>Disaster Relief</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="urgent"
+              checked={formData.urgent}
+              onChange={(e) => setFormData({ ...formData, urgent: e.target.checked })}
+              className="w-5 h-5 rounded border-gray-300 text-coral focus:ring-coral"
+            />
+            <label htmlFor="urgent" className="text-sm text-ink">
+              Mark as urgent (will be highlighted to donors)
+            </label>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-6 py-3 rounded-xl border border-gray-200 text-muted font-semibold hover:bg-sand transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-6 py-3 rounded-xl bg-coral text-white font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {loading ? 'Creating...' : 'Create Request'}
+            </button>
+          </div>
+        </form>
       </motion.div>
     </motion.div>
   );
@@ -586,6 +1201,23 @@ export default function NGODashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [collapsed, setCollapsed] = useState(false);
 
+  // Handlers for quick actions
+  const handleShowCreateOpportunity = () => {
+    setActiveTab('opportunities');
+    // Trigger the create modal after a short delay to allow tab switch
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('show-create-opportunity'));
+    }, 100);
+  };
+
+  const handleShowCreateFundRequest = () => {
+    setActiveTab('fundraising');
+    // Trigger the create modal after a short delay to allow tab switch
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('show-create-fund-request'));
+    }, 100);
+  };
+
   const ActiveTab = TAB_COMPONENTS[activeTab] || TabOverview;
 
   return (
@@ -610,7 +1242,14 @@ export default function NGODashboard() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.3 }}
             >
-              <ActiveTab />
+              {activeTab === 'overview' ? (
+                <TabOverview 
+                  onShowCreateOpportunity={handleShowCreateOpportunity}
+                  onShowCreateFundRequest={handleShowCreateFundRequest}
+                />
+              ) : (
+                <ActiveTab />
+              )}
             </motion.div>
           </AnimatePresence>
         </div>

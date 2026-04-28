@@ -124,22 +124,45 @@ app.get('/api/opportunities', async (req, res) => {
   try {
     const { cause, city, status = 'open', limit = 20 } = req.query;
     
-    let query = db.collection('opportunities').where('status', '==', status);
+    // Simplified query without orderBy to avoid index requirement
+    let query = db.collection('opportunities');
     
-    if (cause && cause !== 'All') {
-      query = query.where('cause', '==', cause);
+    // Only filter by status if provided
+    if (status) {
+      query = query.where('status', '==', status);
     }
     
-    if (city) {
-      query = query.where('city', '==', city);
-    }
+    // Get all matching documents
+    const snapshot = await query.limit(parseInt(limit) * 2).get();
     
-    const snapshot = await query.orderBy('createdAt', 'desc').limit(parseInt(limit)).get();
-    
-    const opportunities = [];
+    // Filter in memory to avoid composite index requirement
+    let opportunities = [];
     snapshot.forEach(doc => {
-      opportunities.push({ id: doc.id, ...doc.data() });
+      const data = doc.data();
+      let matches = true;
+      
+      if (cause && cause !== 'All' && data.cause !== cause) {
+        matches = false;
+      }
+      
+      if (city && data.city !== city) {
+        matches = false;
+      }
+      
+      if (matches) {
+        opportunities.push({ id: doc.id, ...data });
+      }
     });
+    
+    // Sort in memory
+    opportunities.sort((a, b) => {
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
+    
+    // Limit results
+    opportunities = opportunities.slice(0, parseInt(limit));
     
     res.json({ opportunities });
   } catch (error) {
@@ -230,11 +253,19 @@ app.get('/api/applications', verifyToken, async (req, res) => {
       return res.status(403).json({ message: 'Invalid role' });
     }
     
-    const snapshot = await query.orderBy('appliedAt', 'desc').get();
+    // Remove orderBy to avoid index requirement
+    const snapshot = await query.get();
     
-    const applications = [];
+    let applications = [];
     snapshot.forEach(doc => {
       applications.push({ id: doc.id, ...doc.data() });
+    });
+    
+    // Sort in memory
+    applications.sort((a, b) => {
+      const aTime = a.appliedAt?._seconds || 0;
+      const bTime = b.appliedAt?._seconds || 0;
+      return bTime - aTime;
     });
     
     res.json({ applications });
@@ -387,12 +418,18 @@ app.get('/api/certificates', verifyToken, async (req, res) => {
   try {
     const snapshot = await db.collection('certificates')
       .where('volunteerId', '==', req.user.uid)
-      .orderBy('issuedAt', 'desc')
       .get();
     
-    const certificates = [];
+    let certificates = [];
     snapshot.forEach(doc => {
       certificates.push({ id: doc.id, ...doc.data() });
+    });
+    
+    // Sort in memory
+    certificates.sort((a, b) => {
+      const aTime = a.issuedAt?._seconds || 0;
+      const bTime = b.issuedAt?._seconds || 0;
+      return bTime - aTime;
     });
     
     res.json({ certificates });
@@ -426,18 +463,31 @@ app.get('/api/fund-requests', async (req, res) => {
   try {
     const { status = 'active', ngoId, limit = 20 } = req.query;
     
-    let query = db.collection('fundRequests').where('status', '==', status);
+    let query = db.collection('fundRequests');
+    
+    if (status) {
+      query = query.where('status', '==', status);
+    }
     
     if (ngoId) {
       query = query.where('ngoId', '==', ngoId);
     }
     
-    const snapshot = await query.orderBy('createdAt', 'desc').limit(parseInt(limit)).get();
+    const snapshot = await query.limit(parseInt(limit) * 2).get();
     
-    const fundRequests = [];
+    let fundRequests = [];
     snapshot.forEach(doc => {
       fundRequests.push({ id: doc.id, ...doc.data() });
     });
+    
+    // Sort in memory
+    fundRequests.sort((a, b) => {
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
+    });
+    
+    fundRequests = fundRequests.slice(0, parseInt(limit));
     
     res.json({ fundRequests });
   } catch (error) {
@@ -482,6 +532,8 @@ app.get('/api/donations', verifyToken, async (req, res) => {
     const userDoc = await db.collection('users').doc(req.user.uid).get();
     const role = userDoc.data()?.role;
     
+    console.log(`[Donations GET] User: ${req.user.uid}, Role: ${role}`);
+    
     let query;
     if (role === 'donor') {
       query = db.collection('donations').where('donorId', '==', req.user.uid);
@@ -491,12 +543,29 @@ app.get('/api/donations', verifyToken, async (req, res) => {
       return res.status(403).json({ message: 'Invalid role' });
     }
     
-    const snapshot = await query.orderBy('donatedAt', 'desc').get();
+    const snapshot = await query.get();
     
-    const donations = [];
+    let donations = [];
     snapshot.forEach(doc => {
-      donations.push({ id: doc.id, ...doc.data() });
+      const data = doc.data();
+      // Convert Firestore timestamps to ISO strings
+      const donation = {
+        id: doc.id,
+        ...data,
+        donatedAt: data.donatedAt?.toDate?.()?.toISOString() || data.donatedAt,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+      };
+      donations.push(donation);
     });
+    
+    // Sort by createdAt descending
+    donations.sort((a, b) => {
+      const aTime = new Date(a.createdAt || 0).getTime();
+      const bTime = new Date(b.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
+    
+    console.log(`[Donations GET] Found ${donations.length} donations`);
     
     res.json({ donations });
   } catch (error) {
@@ -509,6 +578,8 @@ app.post('/api/donations', verifyToken, async (req, res) => {
   try {
     const { fundRequestId, amount } = req.body;
     
+    console.log(`[Donations POST] User: ${req.user.uid}, FundRequest: ${fundRequestId}, Amount: ${amount}`);
+    
     const userDoc = await db.collection('users').doc(req.user.uid).get();
     if (!userDoc.exists || userDoc.data().role !== 'donor') {
       return res.status(403).json({ message: 'Only donors can make donations' });
@@ -516,6 +587,7 @@ app.post('/api/donations', verifyToken, async (req, res) => {
     
     const fundDoc = await db.collection('fundRequests').doc(fundRequestId).get();
     if (!fundDoc.exists) {
+      console.log(`[Donations POST] Fund request not found: ${fundRequestId}`);
       return res.status(404).json({ message: 'Fund request not found' });
     }
     
@@ -525,14 +597,17 @@ app.post('/api/donations', verifyToken, async (req, res) => {
       ngoId: fundDoc.data().ngoId,
       ngoName: fundDoc.data().ngoName,
       fundRequestId,
+      fundRequestTitle: fundDoc.data().title,
       amount,
       currency: 'INR',
       paymentStatus: 'pending', // Manual verification needed
       utilizationProof: [],
       donatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
     
     const docRef = await db.collection('donations').add(donation);
+    console.log(`[Donations POST] Created donation: ${docRef.id}`);
     
     // Update fund request raised amount
     await db.collection('fundRequests').doc(fundRequestId).update({
@@ -556,6 +631,8 @@ app.post('/api/donations', verifyToken, async (req, res) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     
+    console.log(`[Donations POST] Success - donation created and stats updated`);
+    
     res.json({ success: true, id: docRef.id, donation });
   } catch (error) {
     console.error('Create donation error:', error);
@@ -569,13 +646,19 @@ app.get('/api/notifications', verifyToken, async (req, res) => {
   try {
     const snapshot = await db.collection('notifications')
       .where('userId', '==', req.user.uid)
-      .orderBy('createdAt', 'desc')
       .limit(50)
       .get();
     
-    const notifications = [];
+    let notifications = [];
     snapshot.forEach(doc => {
       notifications.push({ id: doc.id, ...doc.data() });
+    });
+    
+    // Sort in memory
+    notifications.sort((a, b) => {
+      const aTime = a.createdAt?._seconds || 0;
+      const bTime = b.createdAt?._seconds || 0;
+      return bTime - aTime;
     });
     
     res.json({ notifications });

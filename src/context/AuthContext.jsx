@@ -113,6 +113,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const refreshProfile = async () => {
+    try {
+      if (!token) return;
+      const response = await api.get('/api/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setProfile(response.data.profile);
+      return { success: true };
+    } catch (error) {
+      console.error('Refresh profile error:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
   const getAuthToken = async () => {
     if (firebaseAuth.currentUser) {
       return await firebaseAuth.currentUser.getIdToken();
@@ -131,6 +145,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     resetPassword,
     updateProfile,
+    refreshProfile,
     getAuthToken,
   };
 
