@@ -17,7 +17,8 @@ import {
   createOpportunity,
   createFundRequest,
   updateApplication,
-  updateProfile
+  updateProfile,
+  generateDescription
 } from '../../lib/api';
 
 /* ── Animation Variants ─────────────────────────────────────── */
@@ -959,7 +960,32 @@ function CreateFundRequestModal({ onClose, onSuccess }) {
     urgent: false,
   });
   const [loading, setLoading] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
   const [error, setError] = useState('');
+
+  const handleGenerateDescription = async () => {
+    if (!formData.title || !formData.targetAmount || !formData.cause) {
+      setError('Please fill in Title, Target Amount, and Cause first');
+      return;
+    }
+
+    setAiGenerating(true);
+    setError('');
+
+    try {
+      const response = await generateDescription({
+        title: formData.title,
+        cause: formData.cause,
+        targetAmount: formData.targetAmount,
+      });
+      
+      setFormData({ ...formData, description: response.data.description });
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to generate description. Please write manually.');
+    } finally {
+      setAiGenerating(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1019,15 +1045,35 @@ function CreateFundRequestModal({ onClose, onSuccess }) {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-ink mb-2">Description *</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-semibold text-ink">Description *</label>
+              <button
+                type="button"
+                onClick={handleGenerateDescription}
+                disabled={aiGenerating || !formData.title || !formData.targetAmount}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className={`w-4 h-4 ${aiGenerating ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  {aiGenerating ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  )}
+                </svg>
+                {aiGenerating ? 'Generating...' : 'Generate with AI'}
+              </button>
+            </div>
             <textarea
               required
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Describe what the funds will be used for..."
-              rows={4}
+              rows={6}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-coral focus:border-coral outline-none resize-none"
             />
+            <p className="text-xs text-muted mt-1">
+              Tip: Fill in the title, amount, and cause first, then click "Generate with AI" for a compelling description
+            </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">

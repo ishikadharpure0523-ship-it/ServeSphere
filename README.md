@@ -2,6 +2,25 @@
 
 ServeSphere is a comprehensive platform connecting NGOs, volunteers, and donors in India. Built with transparency, trust, and measurable impact at its core.
 
+## IMPORTANT: Demo Credentials Notice
+
+This repository includes **public demo credentials** in `.env.example` to allow easy testing and evaluation. 
+
+**What's Included:**
+- Firebase client credentials (API key, project ID, etc.)
+- Google Gemini AI API key for AI features
+- All credentials are functional and ready to use
+
+**What's NOT Included:**
+- Firebase service account key (`serviceAccountKey.json`) - contact repository owner or create your own
+
+**Security Considerations:**
+- Demo credentials are shared and publicly accessible
+- Suitable for testing, demos, and hackathon evaluation
+- NOT recommended for production use
+- Create your own Firebase project and API keys for production deployment
+- Monitor usage to prevent abuse
+
 ## Features
 
 ### For Volunteers
@@ -24,6 +43,7 @@ ServeSphere is a comprehensive platform connecting NGOs, volunteers, and donors 
 - **Post Opportunities**: Find volunteers for your projects
 - **Manage Applications**: Review and accept volunteer applications
 - **Fundraising**: Create fund requests and track donations received
+- **AI Description Generator**: Generate compelling fund request descriptions using Google Gemini AI
 - **Transparency Tools**: Upload bills, photos, and impact reports
 - **Build Trust**: Increase trust score through verified activities
 - **Real-time Notifications**: Get instant updates on applications and donations
@@ -48,6 +68,7 @@ ServeSphere is a comprehensive platform connecting NGOs, volunteers, and donors 
 - **Firestore** - NoSQL cloud database
 - **Firebase Authentication** - User authentication service
 - **Firebase Storage** - File storage service
+- **Google Gemini AI** - AI-powered description generation
 - **CORS** - Cross-origin resource sharing
 - **dotenv** - Environment variable management
 
@@ -80,33 +101,50 @@ cd ..
 
 3. **Setup environment variables**
 
-Create `.env` in root directory:
-```env
-VITE_FIREBASE_API_KEY=your_firebase_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_firebase_app_id
-VITE_API_BASE_URL=http://localhost:5000
+**EASY SETUP - Use Demo Credentials:**
+
+The repository includes demo Firebase credentials in `.env.example`. Simply copy it:
+
+```bash
+# Copy frontend environment file
+cp .env.example .env
+
+# Copy backend environment file  
+cp .env.example backend/.env
 ```
 
-Create `backend/.env`:
-```env
-PORT=5000
-CLIENT_ORIGIN=http://localhost:5173
-FIREBASE_SERVICE_ACCOUNT_PATH=./serviceAccountKey.json
-```
+**IMPORTANT NOTES:**
+- Demo credentials are shared and public - anyone can use them
+- Demo Gemini API key is included for testing AI features
+- You still need `serviceAccountKey.json` (see step 4)
+- For production, create your own Firebase project and API keys
 
-4. **Setup Firebase**
-- Follow the detailed [SETUP_GUIDE.md](./SETUP_GUIDE.md)
-- Create a Firebase project
-- Enable Authentication (Email/Password)
-- Create Firestore database
-- Enable Firebase Storage
-- Download service account key and place in `backend/` folder as `serviceAccountKey.json`
+**OR Create Your Own Firebase Project:**
 
-5. **Run the application**
+If you prefer your own credentials, create `.env` files manually with your Firebase config (see `.env.example` for format).
+
+4. **Setup Firebase Service Account Key**
+
+**CRITICAL:** The `serviceAccountKey.json` file is NOT included in the repository for security.
+
+**Option A - Use Demo Project:**
+- Contact repository owner for the demo `serviceAccountKey.json`
+- Place it in `backend/` folder
+
+**Option B - Create Your Own:**
+- Go to [Firebase Console](https://console.firebase.google.com)
+- Select your project > Project Settings > Service Accounts
+- Click "Generate New Private Key"
+- Save as `serviceAccountKey.json` in `backend/` folder
+- Follow [SETUP_GUIDE.md](./SETUP_GUIDE.md) for detailed instructions
+
+5. **Setup Google Gemini AI (Optional)**
+- Demo API key is already included in `.env.example`
+- AI features will work out of the box
+- For your own key: Visit https://makersuite.google.com/app/apikey
+- Enables AI-powered fund request descriptions
+
+6. **Run the application**
 
 Terminal 1 (Frontend):
 ```bash
@@ -151,6 +189,13 @@ Visit http://localhost:5173
 - Instant verification for demo (configurable for manual review)
 - Verified badge display
 - Trust score system
+
+### AI-Powered Features
+- **Fund Request Description Generator**: Uses Google Gemini AI to create compelling, professional descriptions
+- Analyzes title, cause, and target amount to generate contextual content
+- Creates emotional, impactful narratives that resonate with donors
+- Saves NGOs time and improves fundraising success
+- Graceful fallback if AI service is unavailable
 
 ### File Upload System (Ready for Implementation)
 - Profile images
@@ -267,6 +312,9 @@ All API endpoints require authentication via Bearer token in the Authorization h
 - `GET /api/stats/volunteer` - Get volunteer statistics
 - `GET /api/stats/ngo` - Get NGO statistics
 - `GET /api/stats/donor` - Get donor statistics
+
+### AI Features
+- `POST /api/ai/generate-description` - Generate fund request description using AI (requires title, cause, targetAmount)
 
 ## Project Structure
 

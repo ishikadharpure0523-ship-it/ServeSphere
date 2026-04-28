@@ -96,6 +96,11 @@ export const createDonation = async (data) => {
   return api.post('/api/donations', data);
 };
 
+// AI
+export const generateDescription = async (data) => {
+  return api.post('/api/ai/generate-description', data);
+};
+
 // Notifications
 export const getNotifications = async () => {
   return api.get('/api/notifications');

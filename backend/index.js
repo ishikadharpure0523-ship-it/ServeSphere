@@ -1,10 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 dotenv.config();
 
 const { auth, db, admin } = require('./firebaseAdmin');
+
+// Initialize Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -522,6 +526,90 @@ app.post('/api/fund-requests', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('Create fund request error:', error);
     res.status(500).json({ message: 'Failed to create fund request' });
+  }
+});
+
+// ============ AI ROUTES ============
+
+app.post('/api/ai/generate-description', verifyToken, async (req, res) => {
+  try {
+    const { title, cause, targetAmount, purpose } = req.body;
+    
+    console.log('[AI] Request received:', { title, cause, targetAmount });
+    
+    if (!title || !cause || !targetAmount) {
+      return res.status(400).json({ message: 'Title, cause, and target amount are required' });
+    }
+    
+    // Check if Gemini API key is configured
+    const apiKey = process.env.GEMINI_API_KEY;
+    console.log('[AI] API Key present:', !!apiKey, 'Length:', apiKey?.length);
+    
+    if (!apiKey || apiKey === 'your_gemini_api_key_here') {
+      return res.status(503).json({ message: 'AI service not configured' });
+    }
+    
+    console.log('[AI] Sending request to Gemini API...');
+    
+    const prompt = `You are a professional fundraising copywriter for NGOs in India. Write a compelling and emotional fund request description.
+
+Title: ${title}
+Cause: ${cause}
+Target Amount: ₹${targetAmount}
+${purpose ? `Purpose: ${purpose}` : ''}
+
+Write a 3-4 paragraph description that:
+1. Explains the problem/need clearly
+2. Shows the impact of the donation
+3. Creates emotional connection
+4. Includes specific details about how funds will be used
+5. Ends with a call to action
+
+Keep it professional, authentic, and inspiring. Use Indian context and currency (₹). Write in a warm, human tone.`;
+
+    // Use REST API directly with v1beta endpoint
+    const axios = require('axios');
+    
+    // First, let's try to list available models to debug
+    try {
+      const modelsResponse = await axios.get(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+      );
+      console.log('[AI] Available models:', modelsResponse.data.models?.map(m => m.name).slice(0, 5));
+    } catch (e) {
+      console.log('[AI] Could not list models:', e.message);
+    }
+    
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }]
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    const description = response.data.candidates[0].content.parts[0].text;
+    
+    console.log('[AI] Successfully generated description for:', title);
+    
+    res.json({ success: true, description });
+  } catch (error) {
+    console.error('[AI] Generation error:', error.message);
+    if (error.response) {
+      console.error('[AI] API Response:', error.response.data);
+    }
+    res.status(500).json({ 
+      message: 'Failed to generate description',
+      error: error.message 
+    });
   }
 });
 
